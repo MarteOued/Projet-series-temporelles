@@ -3,8 +3,12 @@ numpy
 scipy
 statsmodels
 scikit-learn
-lightgbm
 matplotlib
 seaborn
 jupyter
 pyarrow
+requests
+holidays
+pytest
+# Optionnel : gradient boosting plus rapide si le temps de calcul devient trop long
+# lightgbm
