@@ -23,3 +23,15 @@ git push -u origin martino/rte
 
 ## Protocole (rappel)
 À 14h le jour J, on prévoit les 24 heures de J+1. Aucune variable inconnue à 14h J ne doit être utilisée.
+
+## Notebooks
+| Notebook | Responsable |
+|---|---|
+| `00_demarrage_colab` | tous |
+| `01_exploration_rte_martino` | Martino |
+| `01_exploration_meteo_binome` | binôme |
+| `02_preparation` | à deux (PR relue par l'autre) |
+| `03_benchmarks_martino` | Martino |
+| `04_modele_simple_martino` | Martino |
+| `04_modele_ml_binome` | binôme |
+| `05_evaluation` | à deux (PR relue par l'autre) |
