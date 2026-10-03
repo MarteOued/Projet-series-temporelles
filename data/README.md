@@ -1,8 +1,8 @@
 # Données
 
 Aucune donnée n'est versionnée (voir `.gitignore`). Les fichiers bruts vont dans
-`data/raw/`, les intermédiaires dans `data/interim/`, les fichiers propres dans
-`data/processed/`. Les scripts du dossier `src/` les téléchargent ou les produisent.
+`data/donnees-brutes/`, les intermédiaires dans `data/interim/`, les fichiers propres dans
+`data/donnees-preparees/`. Les scripts du dossier `src/` les téléchargent ou les produisent.
 
 ## Sources
 

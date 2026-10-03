@@ -4,9 +4,10 @@ __pycache__/
 .pytest_cache/
 .DS_Store
 .env
-data/raw/*
+data/donnees-brutes/*
 data/interim/*
-data/processed/*
-!data/raw/.gitkeep
+data/donnees-preparees/*
+
+!data/donnees-brutes/.gitkeep
 !data/interim/.gitkeep
-!data/processed/.gitkeep
+!data/donnees-preparees/.gitkeep

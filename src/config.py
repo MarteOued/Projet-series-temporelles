@@ -9,9 +9,12 @@ from pathlib import Path
 
 # --- Chemins -----------------------------------------------------------------
 RACINE = Path(__file__).resolve().parent.parent
-DATA_RAW = RACINE / "data" / "raw"
+# donnees-brutes : fichiers téléchargés, jamais modifiés à la main
+# interim : fichiers intermédiaires (étapes de travail)
+# donnees-preparees : fichiers propres, prêts pour les modèles
+DATA_BRUTES = RACINE / "data" / "donnees-brutes"
 DATA_INTERIM = RACINE / "data" / "interim"
-DATA_PROCESSED = RACINE / "data" / "processed"
+DATA_PREPAREES = RACINE / "data" / "donnees-preparees"
 REPORT_TABLES = RACINE / "report" / "tables"
 REPORT_FIGURES = RACINE / "report" / "figures"
 
