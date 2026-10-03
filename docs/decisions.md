@@ -45,3 +45,5 @@ Statuts : **Validé** (les deux), **À confirmer** (proposé, pas encore validé
 | 2026-10-02 | Test bonus 2026 retiré (à confirmer) | Ne faisait pas partie du découpage retenu : test 2024-2025 |
 | 2026-10-02 | Covid : dates précisées (17 mars au 17 mai 2020) | Remplace « mars à mai » |
 | 2026-10-02 | Heure de 14 h reformulée : tranche 12 h-13 h (consommation), heure locale ≤ 13 h (météo) | Écriture sans ambiguïté |
+| 2026-10-03 | Dossiers renommés : `data/raw` → `data/donnees-brutes`, `data/processed` → `data/donnees-preparees` (`config.py` : `DATA_BRUTES`, `DATA_PREPAREES`) | Noms en français, plus clairs pour le groupe |
+| 2026-10-03 | Source de la consommation : jeu en ligne `eco2mix-national-cons-def` (API ODRÉ). Il contient les données définitives jusqu'au 31/12/2024 et consolidées à partir du 01/01/2025 | Un seul jeu pour toute la période ; vérifié sur l'API le 2026-10-03. Répond à la question ouverte et à la décision 15 |

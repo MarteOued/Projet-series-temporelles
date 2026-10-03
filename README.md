@@ -2,8 +2,8 @@
 
 Projet de séries temporelles (Données temporelles, Université Lumière Lyon 2), travail en binôme, 50 % de la note.
 
-- Auteurs : Khadim NGOM et Martino [NOM À COMPLÉTER]
-- Date de rendu : [À COMPLÉTER] · Date de l'oral : [À COMPLÉTER]
+- Auteurs : Khadim NGOM et Martine Ouedraogo
+- Date de rendu : 11/10/2026 
 - Dépôt : https://github.com/MarteOued/Projet-series-temporelles
 
 ## Objectif
@@ -26,7 +26,7 @@ Détail des règles : `docs/protocole.md`. Tableau de disponibilité des variabl
 | Météo | SYNOP (Météo-France), 8 stations, observations toutes les 3 heures en UTC |
 | Calendrier | construit par le groupe : jours fériés, vacances scolaires, ponts |
 
-Les données ne sont pas dans le dépôt : elles se téléchargent dans `data/raw/` avec les scripts. Formats et constats : `data/README.md`.
+Les données ne sont pas dans le dépôt : elles se téléchargent dans `data/donnees-brutes/` avec les scripts. Formats et constats : `data/README.md`.
 
 ## Décisions
 
@@ -48,10 +48,10 @@ requirements.txt       dépendances Python
 pytest.ini             configuration des tests
 src/
   config.py            décisions du groupe (valeurs)
-  rte.py               consommation : téléchargement, passage à l'heure         (à écrire)
+  rte.py               consommation : téléchargement, passage à l'heure
   meteo.py             météo : lecture, stations, température nationale        (à écrire)
   calendrier.py        variables calendaires                                    (à écrire)
-  protocole.py         règle des 14 h et découpage chronologique                (à écrire)
+  protocole.py         règle des 14 h (écrite) et découpage chronologique       (à écrire)
   features.py          variables construites à 14 h, sans fuite                 (à écrire)
   benchmarks.py        benchmarks sans apprentissage                            (à écrire)
   modeles_lineaires.py régressions linéaires                                    (à écrire)
@@ -60,7 +60,7 @@ src/
 tests/                 tests automatiques, dont le test de non-fuite
 docs/                  décisions, protocole, disponibilité des variables, journal de l'IA
 notebooks/             notebooks Colab (enveloppes autour de src/)
-data/                  raw/, interim/, processed/ : non versionnés
+data/                  donnees-brutes/, interim/, donnees-preparees/ : non versionnés
 report/                tables/ et figures/
 ```
 
@@ -80,9 +80,9 @@ pytest
 | # | Étape | Commande | Sortie | Coût | État |
 |---|---|---|---|---|---|
 | 1 | Tests | `pytest` | tous les tests passent (aucun appel réseau) | rapide | disponible |
-| 2 | Consommation | `python -m src.rte` | `data/processed/conso_horaire_utc.csv` | **coûteux** : téléchargement | à écrire |
-| 3 | Météo | `python -m src.meteo` | `data/processed/meteo_horaire_utc.csv` | **coûteux** : un fichier par année, mis en cache | à écrire |
-| 4 | Calendrier | `python -m src.calendrier` | `data/processed/calendrier.csv` | rapide | à écrire |
+| 2 | Consommation | `python -m src.rte` | `data/donnees-preparees/rte/conso_horaire_utc.csv` | **coûteux** : téléchargement de 85 Mo (une seule fois, mis en cache) | disponible. Explications : `notebooks/01_donnees_RTE.ipynb` |
+| 3 | Météo | `python -m src.meteo` | `data/donnees-preparees/meteo_horaire_utc.csv` | **coûteux** : un fichier par année, mis en cache | à écrire |
+| 4 | Calendrier | `python -m src.calendrier` | `data/donnees-preparees/calendrier.csv` | rapide | à écrire |
 | 5 | Variables à 14 h et test de non-fuite | à définir | | | à écrire |
 | 6 | Benchmarks, modèles, évaluation | à définir | tables et figures dans `report/` | **coûteux** : réestimation mensuelle | à écrire |
 
@@ -95,7 +95,7 @@ Voir `CONTRIBUTING.md` : une branche par personne et par sujet, pull request rel
 - [x] Compréhension du sujet
 - [x] Décisions principales (`docs/decisions.md`)
 - [x] Structure du dépôt
-- [ ] Données propres reproduites depuis zéro (consommation, météo, calendrier)
+- [ ] Données propres reproduites depuis zéro : consommation **faite** ; météo et calendrier à faire
 - [ ] Variables à 14 h et test de non-fuite
 - [ ] Benchmarks et évaluation sur la validation 2023
 - [ ] Modèles, ablation, test de sensibilité sur 2020
