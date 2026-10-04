@@ -3,10 +3,8 @@
 Ce module construit des périodes de vacances scolaires propres pour les
 zones A, B et C à partir de deux sources :
 
-- data/raw/calendrier_scolaire.csv :
-  données récupérées depuis l'API du ministère de l'Éducation nationale ;
-- data/raw/calendrier_scolaire_historique.csv :
-  complément historique pour 2015-2016 et 2016-2017.
+- data/donnees-brutes/calendrier_scolaire.csv :
+- data/donnees-brutes/calendrier_scolaire_historique.csv :
 
 Les dates provenant de l'API sont converties de UTC vers Europe/Paris avant
 d'extraire la date locale.
@@ -19,11 +17,11 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.config import DATA_RAW, FUSEAU
+from src.config import DATA_BRUTES, FUSEAU
 
 
-FICHIER_API = DATA_RAW / "calendrier_scolaire.csv"
-FICHIER_HISTORIQUE = DATA_RAW / "calendrier_scolaire_historique.csv"
+FICHIER_API = DATA_BRUTES / "calendrier_scolaire.csv"
+FICHIER_HISTORIQUE = DATA_BRUTES / "calendrier_scolaire_historique.csv"
 
 ZONES = ("Zone A", "Zone B", "Zone C")
 

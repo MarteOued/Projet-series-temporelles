@@ -50,3 +50,5 @@ Statuts : **Validé** (les deux), **À confirmer** (proposé, pas encore validé
 | 2026-10-02 | Heure de 14 h reformulée : tranche 12 h-13 h (consommation), heure locale ≤ 13 h (météo) | Écriture sans ambiguïté |
 | 2026-10-03 | Stations SYNOP : réouverture du choix de 8 stations | Le nombre et la liste des stations seront déterminés après analyse de leur couverture temporelle, de la qualité des observations et de leur répartition géographique |
 | 2026-10-03 | Température nationale : méthode d'agrégation réouverte | La moyenne simple des 8 stations n'est plus fixée a priori ; la représentation nationale sera choisie après l'analyse des stations |
+| 2026-10-03 | Dossiers renommés : `data/raw` → `data/donnees-brutes`, `data/processed` → `data/donnees-preparees` (`config.py` : `DATA_BRUTES`, `DATA_PREPAREES`) | Noms en français, plus clairs pour le groupe |
+| 2026-10-03 | Source de la consommation : jeu en ligne `eco2mix-national-cons-def` (API ODRÉ). Il contient les données définitives jusqu'au 31/12/2024 et consolidées à partir du 01/01/2025 | Un seul jeu pour toute la période ; vérifié sur l'API le 2026-10-03. Répond à la question ouverte et à la décision 15 |
