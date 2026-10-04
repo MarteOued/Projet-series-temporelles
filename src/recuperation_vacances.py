@@ -5,7 +5,7 @@ Ministère de l'Éducation nationale
 https://data.education.gouv.fr/
 
 Ce module récupère les données brutes du calendrier scolaire via
-l'API officielle et les sauvegarde dans data/raw/.
+l'API officielle et les sauvegarde dans data/donnees-brutes/.
 
 Aucune transformation métier n'est réalisée ici.
 """
@@ -13,7 +13,7 @@ Aucune transformation métier n'est réalisée ici.
 import pandas as pd
 import requests
 
-from src.config import DATA_RAW
+from src.config import DATA_BRUTES
 
 
 URL_API = (
@@ -21,7 +21,7 @@ URL_API = (
     "datasets/fr-en-calendrier-scolaire/records"
 )
 
-FICHIER_SORTIE = DATA_RAW / "calendrier_scolaire.csv"
+FICHIER_SORTIE = DATA_BRUTES / "calendrier_scolaire.csv"
 
 
 def recuperer_vacances_scolaires():
@@ -78,7 +78,7 @@ def recuperer_vacances_scolaires():
     donnees = pd.DataFrame(observations)
 
     # Création du dossier raw s'il n'existe pas.
-    DATA_RAW.mkdir(
+    DATA_BRUTES.mkdir(
         parents=True,
         exist_ok=True,
     )

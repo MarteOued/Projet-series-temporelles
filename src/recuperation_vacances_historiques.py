@@ -18,14 +18,14 @@ avant toute transformation.
 
 import pandas as pd
 
-from src.config import DATA_RAW
+from src.config import DATA_BRUTES
 
 
 # -----------------------------------------------------------------------------
 # Fichier de sortie
 # -----------------------------------------------------------------------------
 
-FICHIER_SORTIE = DATA_RAW / "calendrier_scolaire_historique.csv"
+FICHIER_SORTIE = DATA_BRUTES / "calendrier_scolaire_historique.csv"
 
 
 # -----------------------------------------------------------------------------
@@ -339,7 +339,7 @@ def construire_calendrier_historique():
     # 3. Création du dossier de sortie
     # -------------------------------------------------------------------------
 
-    DATA_RAW.mkdir(
+    DATA_BRUTES.mkdir(
         parents=True,
         exist_ok=True,
     )
