@@ -11,3 +11,8 @@ data/donnees-preparees/*
 !data/donnees-brutes/.gitkeep
 !data/interim/.gitkeep
 !data/donnees-preparees/.gitkeep
+
+# Matrices meteo intermediaires reproductibles
+data/donnees-traitees/meteo/temperatures_synop_originales.csv
+data/donnees-traitees/meteo/temperatures_synop_imputees.csv
+data/donnees-traitees/meteo/temperatures_synop_completes.csv
