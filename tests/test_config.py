@@ -72,3 +72,9 @@ def test_stations_synop():
 def test_horizons_des_24_heures_de_j_plus_1():
     assert config.HORIZON_MAX - config.HORIZON_MIN + 1 == 24
     assert config.HORIZON_MIN == 24 - config.HEURE_ORIGINE
+
+def test_test_bonus_2026_apres_le_test_final():
+    """Le test bonus 2026 (décision 3) vient strictement après le test 2024-2025."""
+    debut_bonus, fin_bonus = config.TEST_BONUS
+    assert debut_bonus > config.DECOUPAGE["test"][1]
+    assert debut_bonus <= fin_bonus

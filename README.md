@@ -62,10 +62,10 @@ src/
   vacances.py, recuperation_vacances*.py   calendriers scolaires
   protocole.py         règle des 14 h (conso, météo), fin de l'apprentissage ; découpage (à écrire)
   features.py          variables construites à 14 h, sans fuite                 (à écrire)
-  benchmarks.py        benchmarks sans apprentissage                            (à écrire)
+  benchmarks.py        benchmarks sans apprentissage (B0, B1, B2)
   modeles_lineaires.py régressions linéaires                                    (à écrire)
   modeles_ml.py        gradient boosting et météo parfaite                      (à écrire)
-  evaluation.py        MAE, RMSE, total du jour, pointe, heure de pointe        (à écrire)
+  evaluation.py        MAE, RMSE, MAPE, biais, total du jour, pointe, heure de pointe
 tests/                 tests automatiques, dont le test de non-fuite
 docs/                  décisions, protocole, disponibilité des variables, journal de l'IA
 notebooks/             notebooks Colab (enveloppes autour de src/)
@@ -93,7 +93,8 @@ pytest
 | 3 | Météo | `python -m src.pipeline_meteo` | `data/donnees-preparees/meteo/temperatures_france_candidates_horaire_utc.csv` (3 candidates, versions opérationnelle et météo parfaite) ; étapes et journaux dans `data/donnees-traitees/meteo/` | **coûteux** : téléchargement d'environ 80 Mo (une fois), puis environ 15 min (benchmark temporel). Option `--benchmark-spatial` : environ 5 min de plus | disponible |
 | 4 | Calendrier | `python -m src.calendrier` | `data/donnees-preparees/calendrier/calendrier.csv` | rapide | disponible |
 | 5 | Variables à 14 h et test de non-fuite | à définir | | | à écrire |
-| 6 | Benchmarks, modèles, évaluation | à définir | tables et figures dans `report/` | **coûteux** : réestimation mensuelle | à écrire |
+| 6 | Benchmarks | `python -m src.benchmarks` | scores B0, B1 et B2 (apprentissage, validation) ; explications : `notebooks/03_benchmarks.ipynb` | rapide (quelques secondes) | disponible |
+| 7 | Modèles, évaluation | à définir | tables et figures dans `report/` | **coûteux** : réestimation mensuelle | à écrire |
 
 ## Notebooks
 
