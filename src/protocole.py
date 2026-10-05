@@ -210,18 +210,61 @@ def observation_synop_connue_a_14h(validity_time, jour_J):
 # Période d'apprentissage des transformations
 # ---------------------------------------------------------------------------
 
+def debut_apprentissage_utc():
+    """Premier instant de la période d'apprentissage, en UTC (borne incluse).
+
+    La date de début est définie dans
+    ``config.DECOUPAGE["apprentissage"][0]``.
+
+    Elle est interprétée à minuit en heure de Paris puis convertie en UTC,
+    afin que toutes les transformations apprises utilisent exactement
+    la même période d'apprentissage.
+    """
+    debut = pd.Timestamp(
+        config.DECOUPAGE["apprentissage"][0]
+    )
+
+    return debut.tz_localize(config.FUSEAU).tz_convert("UTC")
+
+
 def fin_apprentissage_utc():
     """Premier instant APRÈS la période d'apprentissage, en UTC (borne exclue).
 
     Tout paramètre appris sur les données (corrélations, régressions entre
     stations, choix d'une méthode d'imputation, poids régionaux, seuils) doit
-    utiliser uniquement les observations strictement antérieures à cet instant :
-    minuit (heure de Paris) le lendemain de config.FIN_APPRENTISSAGE.
+    utiliser uniquement les observations comprises dans la période
+    d'apprentissage définie dans ``config.DECOUPAGE``.
+
+    La borne retournée correspond à minuit, heure de Paris, le lendemain
+    du dernier jour d'apprentissage.
     """
-    lendemain = pd.Timestamp(config.FIN_APPRENTISSAGE) + pd.Timedelta(days=1)
+    fin = pd.Timestamp(
+        config.DECOUPAGE["apprentissage"][1]
+    )
+
+    lendemain = fin + pd.Timedelta(days=1)
+
     return lendemain.tz_localize(config.FUSEAU).tz_convert("UTC")
 
 
 def periode_apprentissage(donnees):
-    """Garde les lignes d'un tableau indexé en UTC antérieures à la fin de l'apprentissage."""
-    return donnees.loc[donnees.index < fin_apprentissage_utc()]
+    """Extrait exactement la période d'apprentissage.
+
+    Les données doivent être indexées par des timestamps compatibles avec
+    les bornes UTC du protocole.
+
+    La sélection appliquée est :
+
+        debut_apprentissage_utc() <= timestamp < fin_apprentissage_utc()
+
+    Ainsi, des observations disponibles avant le début officiel de
+    l'apprentissage, notamment celles de 2015, ne peuvent pas participer
+    à l'estimation des paramètres du pipeline.
+    """
+    debut = debut_apprentissage_utc()
+    fin = fin_apprentissage_utc()
+
+    return donnees.loc[
+        (donnees.index >= debut)
+        & (donnees.index < fin)
+    ]
