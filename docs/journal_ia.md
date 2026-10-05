@@ -20,6 +20,8 @@ Chacun doit pouvoir tout expliquer à l'oral.
 | 2026-10-05 | Martine | Claude Code | Relire le travail météo et calendrier de Khadim | Bilan : calcul reproductible, mais fuite d'information dans l'imputation temporelle, stations corses hors périmètre, documentation incomplète | Gardée, transmise à Khadim | Pipeline relancé depuis les données brutes (18 fichiers identiques) ; périmètre vérifié : conso nationale = somme exacte des 12 régions continentales |
 | 2026-10-05 | Martine | Claude Code | Écrire les benchmarks B1, B2 et les mesures d'erreur | `src/benchmarks.py`, `src/evaluation.py`, tests, notebook 03 | Gardée | Tests sur des exemples calculables à la main ; règle des 14 h vérifiée pour chaque jour, et test qu'une triche est bien détectée |
 | 2026-10-05 | Martine | Claude Code | Commenter le graphique de la semaine du 16 janvier 2023 | Commentaire écrit : « en début de semaine, les benchmarks suivent bien » | Modifiée | En regardant le graphique, les benchmarks sont trop bas toute la semaine (semaine précédente plus douce) : commentaire corrigé |
+| 2026-10-05 | Martine | Claude Code | Ajouter un benchmark « jour précédent » (exemple du sujet) | B0 « veille effective » : jour J pour les heures 0 à 12, J-1 pour 13 à 23, à cause de la règle des 14 h | Gardée | Vérification heure par heure de la règle des 14 h ; test montrant que l'heure 13 du jour J est refusée et l'heure 12 acceptée |
+| 2026-10-05 | Martine | Claude Code | Commenter l'erreur de B0 par heure | Commentaire écrit : « pour tous, les erreurs sont plus grandes le matin » | Modifiée | Le graphique montre que B0 est très bon la nuit et que son erreur culmine vers 14-16 h : commentaire corrigé |
 
 ## Les trois exemples exigés dans le rapport
 
