@@ -78,7 +78,7 @@ report/                tables/ et figures/
 ```bash
 git clone https://github.com/MarteOued/Projet-series-temporelles.git
 cd Projet-series-temporelles
-python -m venv .venv
+python -m venv .venv          # Python 3.13 (versions figées dans requirements.txt)
 source .venv/bin/activate        # Windows : .venv\Scripts\activate
 pip install -r requirements.txt
 pytest
