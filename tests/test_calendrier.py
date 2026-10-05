@@ -6,6 +6,18 @@ from src.calendrier import construire_calendrier
 from src.config import DATA_DEBUT, DATA_FIN
 
 
+
+import pytest
+
+from src.vacances import FICHIER_API, FICHIER_HISTORIQUE
+
+# Ces tests lisent les vrais calendriers scolaires : ignorés tant qu'ils ne sont pas
+# téléchargés (python -m src.calendrier).
+pytestmark = pytest.mark.skipif(
+    not (FICHIER_API.exists() and FICHIER_HISTORIQUE.exists()),
+    reason="calendriers scolaires absents : lancer python -m src.calendrier",
+)
+
 def test_calendrier_bornes():
     """Le calendrier doit commencer et finir aux dates configurées."""
 

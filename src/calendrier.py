@@ -10,8 +10,10 @@ une configuration unique pour l'ensemble du projet.
 import holidays
 import pandas as pd
 
-from src.config import DATA_DEBUT, DATA_FIN
+from src.config import DATA_DEBUT, DATA_FIN, DATA_PREPAREES
 from src.vacances import construire_indicateurs_vacances
+
+FICHIER_CALENDRIER = DATA_PREPAREES / "calendrier" / "calendrier.csv"
 
 
 def construire_calendrier(
@@ -36,8 +38,23 @@ def construire_calendrier(
         - jour_semaine : lundi=0, ..., dimanche=6 ;
         - mois : janvier=1, ..., décembre=12 ;
         - weekend : 1 pour samedi/dimanche, 0 sinon ;
-        - ferie : 1 pour un jour férié national français, 0 sinon.
+        - ferie : 1 pour un jour férié national français, 0 sinon ;
+        - veille_ferie, lendemain_ferie, pont_potentiel ;
+        - periode_noel : variable CANDIDATE (du 24 décembre au 1er janvier),
+          à évaluer sur la validation 2023 avant d'être retenue ;
+        - vacances_A, vacances_B, vacances_C, nb_zones_vacances.
+
+    Les variables qui regardent le jour voisin (veille_ferie, lendemain_ferie,
+    pont_potentiel) sont calculées sur une période élargie d'un jour de chaque
+    côté, puis la table est coupée à [date_debut, date_fin]. Sans cette marge,
+    le 31 décembre 2025 ne « verrait » pas que le 1er janvier 2026 est férié.
     """
+
+    # Période demandée, et période élargie d'un jour de chaque côté
+    debut_demande = pd.Timestamp(date_debut)
+    fin_demandee = pd.Timestamp(date_fin)
+    date_debut = (debut_demande - pd.Timedelta(days=1)).date()
+    date_fin = (fin_demandee + pd.Timedelta(days=1)).date()
 
     # -------------------------------------------------------------------------
     # 1. Construction de la grille quotidienne
@@ -200,6 +217,22 @@ def construire_calendrier(
         calendrier["date"]
     )
 
+    # -------------------------------------------------------------------------
+    # 8. Période de Noël (variable candidate)
+    # -------------------------------------------------------------------------
+    #
+    # Du 24 décembre au 1er janvier inclus : les jours les plus atypiques de
+    # l'année d'après l'exploration RTE. Variable candidate : son apport sera
+    # mesuré sur la validation 2023 avant de la garder dans un modèle.
+
+    jour = calendrier["date"].dt.day
+    mois = calendrier["mois"]
+
+    calendrier["periode_noel"] = (
+        ((mois == 12) & (jour >= 24))
+        | ((mois == 1) & (jour == 1))
+    ).astype(int)
+
     calendrier = calendrier.merge(
         vacances,
         on="date",
@@ -220,6 +253,39 @@ def construire_calendrier(
         .astype(int)
     )
 
+    # Retour à la période demandée (la marge ne servait qu'aux calculs)
+    calendrier = calendrier[
+        (calendrier["date"] >= debut_demande)
+        & (calendrier["date"] <= fin_demandee)
+    ].reset_index(drop=True)
+
     return calendrier
+
+
+def main():
+    """Télécharge les vacances scolaires si besoin, construit et sauvegarde le calendrier."""
+
+    from src.recuperation_vacances import FICHIER_SORTIE as FICHIER_API
+    from src.recuperation_vacances import recuperer_vacances_scolaires
+    from src.recuperation_vacances_historiques import construire_calendrier_historique
+    from src.vacances import FICHIER_HISTORIQUE
+
+    if not FICHIER_API.exists():
+        recuperer_vacances_scolaires()
+    if not FICHIER_HISTORIQUE.exists():
+        construire_calendrier_historique()
+
+    calendrier = construire_calendrier()
+
+    FICHIER_CALENDRIER.parent.mkdir(parents=True, exist_ok=True)
+    calendrier.to_csv(FICHIER_CALENDRIER, index=False)
+
+    print(f"Calendrier : {len(calendrier)} jours, du {calendrier['date'].min():%Y-%m-%d} "
+          f"au {calendrier['date'].max():%Y-%m-%d}")
+    print("Fichier :", FICHIER_CALENDRIER)
+
+
+if __name__ == "__main__":
+    main()
 
     

@@ -9,9 +9,9 @@ import pytest
 # CHEMINS
 # =============================================================================
 
-RACINE = Path(__file__).resolve().parents[1]
+from src import config
 
-D = RACINE / "data" / "donnees-traitees" / "meteo"
+D = config.DOSSIER_METEO_TRAITE
 
 ORIGINAL = D / "temperatures_synop_originales.csv"
 SPATIAL = D / "temperatures_synop_imputees.csv"
@@ -147,15 +147,8 @@ def test_observations_originales_conservees_hors_deux_corrections():
     """
     Vérifie que toutes les températures réellement observées
     dans les données originales sont conservées dans la matrice finale,
-    à l'exception des deux anomalies explicitement corrigées.
-
-    Les deux observations corrigées sont :
-
-    - MARIGNANE (07650)
-      2023-08-09 09:00 UTC
-
-    - ST GIRONS (07627)
-      2025-09-23 15:00 UTC
+    à l'exception des anomalies détectées par la règle et corrigées
+    (lues dans le journal des corrections).
     """
 
     original = lire(ORIGINAL)
@@ -164,23 +157,17 @@ def test_observations_originales_conservees_hors_deux_corrections():
     # Positions réellement observées dans les données originales
     masque = original.notna().copy()
 
-    # Deux anomalies explicitement validées et corrigées
+    # Anomalies corrigées : lues dans le journal des corrections
+    if not JOURNAL_CORRECTIONS.exists():
+        pytest.skip(f"Journal absent : {JOURNAL_CORRECTIONS}")
+
+    journal = pd.read_csv(JOURNAL_CORRECTIONS)
     corrections = [
-        (
-            pd.Timestamp(
-                "2023-08-09 09:00:00+00:00"
-            ),
-            "07650",
-        ),
-        (
-            pd.Timestamp(
-                "2025-09-23 15:00:00+00:00"
-            ),
-            "07627",
-        ),
+        (pd.Timestamp(t), str(st).zfill(5))
+        for t, st in zip(journal["timestamp"], journal["station"])
     ]
 
-    # On retire les deux corrections de la comparaison
+    # On retire les corrections de la comparaison
     for timestamp, station in corrections:
 
         if (
@@ -228,8 +215,10 @@ def test_observations_originales_conservees_hors_deux_corrections():
 
 def test_deux_corrections():
     """
-    Vérifie que le journal de correction contient exactement
-    les deux anomalies validées.
+    Vérifie que la règle automatique (apprise sur 2016-2022, sans
+    connaître les dates) retrouve exactement les deux anomalies repérées
+    lors de l'exploration : MARIGNANE (07650) le 2023-08-09 09:00 UTC
+    et ST GIRONS (07627) le 2025-09-23 15:00 UTC.
     """
 
     if not JOURNAL_CORRECTIONS.exists():

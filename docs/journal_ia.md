@@ -40,3 +40,17 @@ Brouillons à relire et à reformuler par le groupe.
    réécrits d'après les sorties réelles. *Vérification* : lecture des sorties et des graphiques.
 
 Pour chaque exemple : la tâche demandée, la proposition obtenue, la décision prise, la méthode de vérification.
+
+## Corrections de la météo et du calendrier (branche `khadim/corrections-meteo`)
+
+Corrections demandées par Khadim après la relecture du 2026-10-05, réalisées par Martine avec
+Claude Code. **Khadim doit relire, relancer et pouvoir expliquer chaque changement** avant de
+valider la pull request.
+
+| Date | Qui | Outil | Tâche demandée | Proposition obtenue | Décision (gardée, modifiée, rejetée) | Comment on a vérifié |
+|---|---|---|---|---|---|---|
+| 2026-10-05 | Martine (pour Khadim) | Claude Code | Rendre l'imputation temporelle causale | Trois méthodes qui n'utilisent que le passé (persistance, veille, persistance ajustée), choisies par longueur de trou sur l'apprentissage | Gardée | Tests anti-fuite : modifier tout ce qui suit un trou ne change pas la valeur imputée ; comparaison sur 1 000 séquences par longueur |
+| 2026-10-05 | Martine (pour Khadim) | Claude Code | Remplacer les 2 anomalies écrites à la main par une règle | Première proposition : seuil fixe de 10 °C d'écart aux voisines | **Rejetée** | Sur les données, ce seuil signalait aussi une vraie mesure (orage du 13/08/2025 à Saint-Girons) : remplacé par le plus grand écart vu sur l'apprentissage (14,19 °C), qui retrouve exactement les 2 anomalies connues |
+| 2026-10-05 | Martine (pour Khadim) | Claude Code | Apprendre les paramètres météo sur 2016-2022 seulement | Une fonction commune `protocole.fin_apprentissage_utc()` utilisée par tous les modules | Gardée | Test : multiplier les données de 2023 par 3 ne change aucun coefficient ; pipeline relancé, 9 793 valeurs spatiales changent de 0,04 °C en moyenne |
+| 2026-10-05 | Martine (pour Khadim) | Claude Code | Préparer la température France sans choisir | Trois candidates, version opérationnelle par report de la dernière observation (jamais d'interpolation) et version météo parfaite | Gardée | Test : modifier les observations de 15 h ne change pas les valeurs horaires opérationnelles d'avant 15 h |
+| 2026-10-05 | Martine (pour Khadim) | Claude Code | Accélérer la recherche des séquences du benchmark temporel | Version vectorisée de la recherche | Gardée | Résultat identique à la version de Khadim sur un exemple (172 séquences) ; temps de calcul de 10 min à 6 s |

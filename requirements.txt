@@ -9,6 +9,8 @@ jupyter
 pyarrow
 requests
 holidays
+pyproj
+shapely
 pytest
 # Optionnel : gradient boosting plus rapide si le temps de calcul devient trop long
 # lightgbm
