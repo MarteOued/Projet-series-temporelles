@@ -1,16 +1,27 @@
 # Données
 
-Aucune donnée n'est versionnée (voir `.gitignore`). Les fichiers bruts vont dans
-`data/donnees-brutes/`, les intermédiaires dans `data/interim/`, les fichiers propres dans
-`data/donnees-preparees/`. Les scripts du dossier `src/` les téléchargent ou les produisent.
+Aucune donnée n'est versionnée (voir `.gitignore`) : les scripts du dossier `src/` les
+téléchargent ou les produisent.
 
 ## Sources
 
 | Donnée | Source | Remarque |
 |---|---|---|
 | Consommation | éCO2mix national (RTE), consommation en MW | Version définitive ou consolidée selon l'année : voir `docs/decisions.md` |
-| Météo | SYNOP (Météo-France), observations toutes les 3 heures | Heures en UTC ; liste officielle des stations fournie à part |
-| Calendrier | construit par le groupe | Jours fériés, vacances scolaires (zones A, B, C), ponts |
+| Météo | SYNOP (Météo-France), jeu « Archive Synop OMM » sur data.gouv.fr : archives annuelles, liste des stations, postes | Heures en UTC. L'hôte cité par le catalogue (`meteofrance.object.data.gouv.fr`) n'existe plus : le code utilise `object.files.data.gouv.fr/meteofrance/` |
+| Régions | Contours des régions (projet france-geojson, dérivé d'IGN Admin Express) | Sert à classer les stations par région |
+| Consommation régionale | éCO2mix régional (RTE), `eco2mix-regional-cons-def`, 2016-2022 | Poids de la température pondérée ; la consommation nationale = somme exacte des 12 régions continentales (pas la Corse) |
+| Calendrier | construit par le groupe | Jours fériés (`holidays`), vacances scolaires A, B, C (data.education.gouv.fr ; Bulletin officiel pour 2015-2017), ponts |
+
+Tout se télécharge automatiquement : `python -m src.rte`, `python -m src.pipeline_meteo`,
+`python -m src.calendrier`.
+
+| Dossier | Contenu |
+|---|---|
+| `donnees-brutes/` | fichiers téléchargés, jamais modifiés |
+| `interim/` | étapes intermédiaires de la consommation |
+| `donnees-traitees/meteo/` | étapes de la météo : matrices, journaux, diagnostics, benchmarks |
+| `donnees-preparees/` | fichiers finaux : `rte/`, `meteo/`, `calendrier/` |
 
 ## Constats sur les fichiers d'exemple de 2016
 

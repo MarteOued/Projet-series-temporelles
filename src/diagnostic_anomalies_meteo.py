@@ -10,9 +10,8 @@ Objectifs
    - imputation spatiale ;
    - imputation temporelle ;
    - correction_anomalie.
-4. Vérifier spécifiquement les deux anomalies corrigées :
-   - MARIGNANE (07650), 2023-08-09 09:00 UTC
-   - ST GIRONS (07627), 2025-09-23 15:00 UTC
+4. Vérifier spécifiquement les anomalies corrigées
+   (liste lue dans le journal des corrections : elle n'est plus écrite à la main)
 5. Contrôler qu'aucune nouvelle anomalie n'a été créée.
 
 IMPORTANT
@@ -29,20 +28,15 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from src import config
 
 
 # =============================================================================
 # CONFIGURATION
 # =============================================================================
 
-RACINE_PROJET = Path(__file__).resolve().parents[1]
 
-DOSSIER_METEO = (
-    RACINE_PROJET
-    / "data"
-    / "donnees-traitees"
-    / "meteo"
-)
+DOSSIER_METEO = config.DOSSIER_METEO_TRAITE
 
 FICHIER_ORIGINAL = (
     DOSSIER_METEO
@@ -60,7 +54,7 @@ FICHIER_COMPLET_AVANT_CORRECTION = (
 )
 
 # IMPORTANT :
-# matrice finale APRES correction des deux anomalies
+# matrice finale APRES correction des anomalies
 FICHIER_FINAL = (
     DOSSIER_METEO
     / "temperatures_synop_finales.csv"
@@ -106,20 +100,25 @@ NB_PAS_CONTEXTE = 2
 NB_VOISINS = 5
 
 
-CAS_CORRIGES = [
-    {
-        "station": "07650",
-        "nom": "MARIGNANE",
-        "timestamp": "2023-08-09 09:00:00+00:00",
-        "ancienne_valeur": 0.0,
-    },
-    {
-        "station": "07627",
-        "nom": "ST GIRONS",
-        "timestamp": "2025-09-23 15:00:00+00:00",
-        "ancienne_valeur": -11.3,
-    },
-]
+# Observations corrigées par src/correction_anomalies_meteo.py. Elles ne sont
+# plus écrites à la main : la liste est remplie au lancement à partir du
+# journal des corrections (voir main).
+CAS_CORRIGES = []
+
+
+def cas_depuis_journal(journal_corrections):
+    """Liste des cas corrigés, au format attendu par les fonctions de ce module."""
+    if journal_corrections.empty:
+        return []
+    return [
+        {
+            "station": ligne.station,
+            "nom": getattr(ligne, "nom_station", ""),
+            "timestamp": str(ligne.timestamp),
+            "ancienne_valeur": float(ligne.valeur_originale),
+        }
+        for ligne in journal_corrections.itertuples(index=False)
+    ]
 
 
 # =============================================================================
@@ -566,7 +565,7 @@ def meilleurs_voisins(
 
 
 # =============================================================================
-# VERIFICATION DES DEUX CORRECTIONS
+# VERIFICATION DES CORRECTIONS
 # =============================================================================
 
 def verifier_corrections(
@@ -579,7 +578,7 @@ def verifier_corrections(
     """
 
     titre(
-        "VERIFICATION DES DEUX ANOMALIES CORRIGEES"
+        "VERIFICATION DES ANOMALIES CORRIGEES"
     )
 
     resultats = []
@@ -729,7 +728,7 @@ def controle_spatial_cas_corriges(
     """
 
     titre(
-        "CONTROLE SPATIAL DES DEUX VALEURS CORRIGEES"
+        "CONTROLE SPATIAL DES VALEURS CORRIGEES"
     )
 
     resultats = []
@@ -1165,6 +1164,8 @@ def main():
         FICHIER_JOURNAL_CORRECTIONS
     )
 
+    CAS_CORRIGES[:] = cas_depuis_journal(journal_corrections)
+
     positions_corrigees = (
         construire_positions_corrigees(
             journal_corrections
@@ -1326,7 +1327,7 @@ def main():
     # =========================================================================
 
     titre(
-        "CONTROLE FINAL DES DEUX CORRECTIONS"
+        "CONTROLE FINAL DES CORRECTIONS"
     )
 
     for cas in CAS_CORRIGES:

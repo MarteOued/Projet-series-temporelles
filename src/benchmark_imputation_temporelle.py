@@ -1,28 +1,34 @@
 """Benchmark des méthodes d'imputation temporelle des températures SYNOP.
 
-Ce module évalue plusieurs méthodes destinées à traiter les valeurs restant
-manquantes après l'imputation spatiale.
+Ce module évalue les méthodes destinées à traiter les valeurs restant
+manquantes après l'imputation spatiale, et choisit celle à utiliser pour
+chaque longueur de trou.
 
 Principe
 --------
-Des séquences réellement observées sont artificiellement masquées afin de
-reproduire les longueurs des trous résiduels observés :
+Des séquences réellement observées sont artificiellement masquées, pour
+plusieurs longueurs de trou (de 1 point = 3 h à 16 points = 48 h). La vérité
+terrain est conservée afin de comparer les prédictions.
 
-    1 point  = 3 heures
-    2 points = 6 heures
-    3 points = 9 heures
-    8 points = 24 heures
+Seules les observations de la PÉRIODE D'APPRENTISSAGE (antérieures à la fin
+de 2022, heure de Paris) sont utilisées : 2023 et le test 2024-2025
+n'interviennent jamais dans le choix de la méthode.
 
-La vérité terrain est conservée afin de comparer les prédictions.
+Méthodes candidates (CAUSALES : elles n'utilisent que le passé)
+------------------------------------------------------------
+persistance         : dernière valeur observée avant le trou ;
+veille              : même heure la veille ;
+persistance_ajustee : dernière valeur + évolution de la veille sur les mêmes
+                      heures.
+Ces fonctions sont celles de src/imputation_temporelle.py : la méthode testée
+est exactement celle qui sera appliquée.
 
-Méthodes
---------
-M1 : interpolation linéaire entre les observations entourant le trou.
-
-M2 : profil journalier utilisant, pour chaque point caché, les températures
-     observées exactement 24 heures avant et 24 heures après.
-
-M3 : méthode hybride combinant M1 et M2.
+Références NON CAUSALES (interdites dans le pipeline, gardées pour mesurer
+le coût de la règle des 14 h)
+-------------------------------------------------------------------------
+interpolation (non causale) : entre l'observation d'avant et celle d'après ;
+journalier ±24 h (non causal) : moyenne de la veille et du lendemain ;
+hybride (non causal)          : moyenne des deux précédentes.
 
 Important
 ---------
@@ -33,18 +39,15 @@ La matrice utilisée comme base est celle obtenue après l'imputation spatiale.
 import numpy as np
 import pandas as pd
 
-from src.config import DATA_BRUTES
+from src import config, protocole
+from src.imputation_temporelle import FONCTIONS_METHODES, METHODES_CAUSALES
 
 
 # =============================================================================
 # CONFIGURATION
 # =============================================================================
 
-DOSSIER_METEO = (
-    DATA_BRUTES.parent
-    / "donnees-traitees"
-    / "meteo"
-)
+DOSSIER_METEO = config.DOSSIER_METEO_TRAITE
 
 FICHIER_MATRICE = (
     DOSSIER_METEO
@@ -68,11 +71,17 @@ FICHIER_PREDICTIONS = (
 
 PAS_HEURES = 3
 
+# Longueurs testées (en points de 3 h). Elles couvrent les trous réels (1, 2,
+# 3 et 8 points) et au-delà, pour que la règle vaille pour toute longueur.
 LONGUEURS = [
     1,
     2,
     3,
+    4,
+    6,
     8,
+    12,
+    16,
 ]
 
 RANDOM_STATE = 42
@@ -82,10 +91,20 @@ RANDOM_STATE = 42
 # Pour les longueurs courtes, 1000 séquences donnent déjà plusieurs milliers
 # de températures évaluées tout en gardant un temps d'exécution raisonnable.
 NB_SEQUENCES_PAR_LONGUEUR = {
-    1: 1000,
-    2: 1000,
-    3: 1000,
-    8: 1000,
+    longueur: 1000
+    for longueur in LONGUEURS
+}
+
+# Méthodes évaluées : nom (tel qu'écrit dans les résultats) -> colonne.
+# Les noms des méthodes causales sont ceux de src/imputation_temporelle.py,
+# qui relit ces résultats pour choisir sa méthode.
+METHODES = {
+    "persistance": "prediction_persistance",
+    "veille": "prediction_veille",
+    "persistance_ajustee": "prediction_persistance_ajustee",
+    "interpolation (non causale)": "prediction_lineaire",
+    "journalier ±24 h (non causal)": "prediction_journaliere",
+    "hybride (non causal)": "prediction_hybride",
 }
 
 
@@ -230,8 +249,11 @@ def sequence_est_complete(
     - le point immédiatement après est observé ;
     - les valeurs à J-1 et J+1 de chaque point sont observées.
 
-    Ces contraintes permettent d'évaluer M1, M2 et M3 exactement sur les
-    mêmes observations.
+    - les valeurs à J-1 du point précédant la séquence sont observées
+      (nécessaire à la persistance ajustée).
+
+    Ces contraintes permettent d'évaluer toutes les méthodes exactement sur
+    les mêmes observations.
     """
 
     n = len(matrice)
@@ -262,7 +284,7 @@ def sequence_est_complete(
         return False
 
     if (
-        debut_position - decalage_24h
+        position_avant - decalage_24h
         < 0
     ):
         return False
@@ -292,6 +314,14 @@ def sequence_est_complete(
 
     if pd.isna(
         serie.iloc[position_apres]
+    ):
+        return False
+
+    # Point précédant la séquence, la veille.
+    if pd.isna(
+        serie.iloc[
+            position_avant - decalage_24h
+        ]
     ):
         return False
 
@@ -330,44 +360,56 @@ def construire_candidats(
     matrice,
     longueur,
 ):
-    """Construit toutes les séquences candidates pour une longueur donnée."""
+    """Construit toutes les séquences candidates pour une longueur donnée.
 
-    candidats = []
+    Mêmes conditions que sequence_est_complete, calculées d'un coup pour toute
+    la série (version rapide). Seules les séquences dont TOUTES les valeurs
+    utilisées (y compris le lendemain des méthodes non causales de référence)
+    sont antérieures à la fin de la période d'apprentissage sont retenues.
+    """
 
     decalage_24h = int(
         24 / PAS_HEURES
     )
 
-    debut_min = (
-        decalage_24h
+    # Dernière position utilisable : avant la fin de l'apprentissage
+    n_apprentissage = int(
+        (matrice.index < protocole.fin_apprentissage_utc()).sum()
     )
 
-    fin_max = (
-        len(matrice)
-        - longueur
-        - decalage_24h
-    )
+    candidats = []
 
     for station in matrice.columns:
 
-        for debut_position in range(
-            debut_min,
-            fin_max + 1,
-        ):
+        observe = matrice[station].notna().to_numpy()
 
-            if sequence_est_complete(
-                matrice=matrice,
-                station=station,
-                debut_position=debut_position,
-                longueur=longueur,
-            ):
+        # cumul[i] = nombre de valeurs observées avant la position i
+        cumul = np.concatenate([[0], np.cumsum(observe)])
 
-                candidats.append(
-                    (
-                        station,
-                        debut_position,
-                    )
-                )
+        def bloc_observe(debut, fin):
+            """Vrai si toutes les positions de debut à fin (incluses) sont observées."""
+            return (cumul[fin + 1] - cumul[debut]) == (fin - debut + 1)
+
+        debuts = np.arange(
+            decalage_24h + 1,
+            n_apprentissage - longueur - decalage_24h,
+        )
+
+        if len(debuts) == 0:
+            continue
+
+        valides = (
+            # séquence, point avant et point après
+            bloc_observe(debuts - 1, debuts + longueur)
+            # la veille : de (point avant - 24 h) à (dernier point - 24 h)
+            & bloc_observe(debuts - 1 - decalage_24h, debuts + longueur - 1 - decalage_24h)
+            # le lendemain (méthodes non causales de référence)
+            & bloc_observe(debuts + decalage_24h, debuts + longueur - 1 + decalage_24h)
+        )
+
+        candidats.extend(
+            (station, int(debut)) for debut in debuts[valides]
+        )
 
     return candidats
 
@@ -633,6 +675,19 @@ def evaluer_sequence(
         predictions_journalieres=pred_m2,
     )
 
+    serie = matrice[station].to_numpy(dtype=float)
+    fin_position = debut_position + longueur - 1
+
+    # La valeur à prédire est cachée : les méthodes causales n'utilisent que le
+    # passé (positions < debut_position), elles ne la voient donc jamais.
+    pred_causales = {
+        methode: np.asarray(
+            FONCTIONS_METHODES[methode](serie, debut_position, fin_position),
+            dtype=float,
+        )
+        for methode in METHODES_CAUSALES
+    }
+
     lignes = []
 
     for k in range(
@@ -671,6 +726,11 @@ def evaluer_sequence(
 
                 "prediction_hybride":
                     pred_m3[k],
+
+                **{
+                    METHODES[methode]: pred_causales[methode][k]
+                    for methode in METHODES_CAUSALES
+                },
             }
         )
 
@@ -824,16 +884,7 @@ def tableau_resultats(
 ):
     """Construit le tableau des performances par longueur et méthode."""
 
-    correspondance = {
-        "M1 - Linéaire":
-            "prediction_lineaire",
-
-        "M2 - Journalier ±24h":
-            "prediction_journaliere",
-
-        "M3 - Hybride":
-            "prediction_hybride",
-    }
+    correspondance = METHODES
 
     lignes = []
 
@@ -898,16 +949,7 @@ def tableau_global(
 ):
     """Calcule les performances globales des méthodes."""
 
-    correspondance = {
-        "M1 - Linéaire":
-            "prediction_lineaire",
-
-        "M2 - Journalier ±24h":
-            "prediction_journaliere",
-
-        "M3 - Hybride":
-            "prediction_hybride",
-    }
+    correspondance = METHODES
 
     lignes = []
 
@@ -969,10 +1011,8 @@ def afficher_meilleure_methode_par_longueur(
 
         sous_table = (
             resultats[
-                resultats[
-                    "longueur_points"
-                ]
-                == longueur
+                (resultats["longueur_points"] == longueur)
+                & resultats["methode"].isin(METHODES_CAUSALES)
             ]
         )
 
@@ -1027,11 +1067,9 @@ def verifier_benchmark(
     )
     print("=" * 90)
 
-    colonnes_predictions = [
-        "prediction_lineaire",
-        "prediction_journaliere",
-        "prediction_hybride",
-    ]
+    colonnes_predictions = list(
+        METHODES.values()
+    )
 
     assert (
         predictions[
@@ -1214,9 +1252,7 @@ def afficher_exemples(
         "longueur_sequence",
         "position_dans_sequence",
         "temperature_reelle",
-        "prediction_lineaire",
-        "prediction_journaliere",
-        "prediction_hybride",
+        *METHODES.values(),
     ]
 
     for longueur in LONGUEURS:

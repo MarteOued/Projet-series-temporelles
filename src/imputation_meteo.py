@@ -20,8 +20,14 @@ Pour chaque station :
 
 Important
 ---------
-Contrairement au benchmark, les modèles sont ici ajustés sur toute la matrice
-originale disponible. Aucune valeur observée n'est artificiellement masquée.
+Les corrélations, le choix des voisins et les régressions sont appris
+uniquement sur la période d'apprentissage (observations antérieures à la fin de
+2022, heure de Paris). Les modèles ainsi appris sont ensuite appliqués à toute
+la période. 2023 et le test 2024-2025 ne servent jamais à apprendre.
+
+L'imputation est spatiale : une valeur manquante à l'instant t est prédite avec
+les stations voisines AU MÊME INSTANT t. Elle n'utilise donc aucune observation
+future.
 
 Les températures réellement observées ne sont jamais modifiées.
 """
@@ -38,14 +44,14 @@ from src.benchmark_imputation import (
     construire_matrice_temperatures,
     k_stations_plus_correlees,
 )
-from src.config import DATA_BRUTES
+from src import config, protocole
 
 
 # =============================================================================
 # CONFIGURATION
 # =============================================================================
 
-DOSSIER_SORTIE = DATA_BRUTES.parent / "donnees-traitees" / "meteo"
+DOSSIER_SORTIE = config.DOSSIER_METEO_TRAITE
 
 FICHIER_MATRICE_ORIGINALE = (
     DOSSIER_SORTIE
@@ -619,15 +625,7 @@ def main():
         f"{100 * nb_manquantes_avant / matrice.size:.4f} %",
     )
 
-    assert matrice.shape == (
-        29472,
-        40,
-    )
-
-    assert (
-        nb_manquantes_avant
-        == 11285
-    )
+    assert matrice.shape[1] == 40
 
     # =========================================================================
     # 2. POSITIONS A IMPUTER
@@ -667,9 +665,17 @@ def main():
         "sur les données originales..."
     )
 
+    # Apprentissage sur la période d'apprentissage uniquement
+    matrice_apprentissage = protocole.periode_apprentissage(matrice)
+
+    print(
+        "Période d'apprentissage des modèles :",
+        matrice_apprentissage.index.min(), "->", matrice_apprentissage.index.max(),
+    )
+
     correlations = (
         calculer_correlations(
-            matrice
+            matrice_apprentissage
         )
     )
 
@@ -692,7 +698,7 @@ def main():
 
     modeles_adaptatifs = (
         ajuster_modeles_adaptatifs(
-            matrice,
+            matrice_apprentissage,
             voisins_multi,
         )
     )

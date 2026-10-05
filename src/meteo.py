@@ -36,7 +36,8 @@ from pyproj import Transformer
 from shapely.geometry import Point, shape
 from shapely.ops import transform
 
-from src.config import DATA_BRUTES, DATA_DEBUT, DATA_FIN
+from src import config
+from src.config import DATA_DEBUT, DATA_FIN
 
 
 # =============================================================================
@@ -49,7 +50,19 @@ URL_DATASET = (
     f"https://www.data.gouv.fr/api/1/datasets/{DATASET_ID}/"
 )
 
-DOSSIER_METEO_BRUT = DATA_BRUTES / "meteo"
+DOSSIER_METEO_BRUT = config.DOSSIER_METEO_BRUT
+
+# L'ancien hôte des archives, encore cité par le catalogue data.gouv.fr, n'existe
+# plus (vérifié le 2026-10-05). Les mêmes fichiers sont servis par le nouvel hôte.
+ANCIEN_HOTE_SYNOP = "https://meteofrance.object.data.gouv.fr/"
+NOUVEL_HOTE_SYNOP = "https://object.files.data.gouv.fr/meteofrance/"
+
+# Contours des régions françaises (propriétés "code" INSEE et "nom"), projet
+# france-geojson, dérivé des données ouvertes IGN Admin Express.
+URL_REGIONS = (
+    "https://raw.githubusercontent.com/gregoiredavid/"
+    "france-geojson/master/regions.geojson"
+)
 
 ANNEE_DEBUT = DATA_DEBUT.year
 ANNEE_FIN = DATA_FIN.year
@@ -156,8 +169,20 @@ def trouver_ressources_synop(catalogue):
 # TELECHARGEMENT
 # =============================================================================
 
+def urls_a_essayer(url):
+    """Adresse du catalogue, puis la même adresse sur le nouvel hôte Météo-France."""
+    urls = [url]
+    if url.startswith(ANCIEN_HOTE_SYNOP):
+        urls.insert(0, NOUVEL_HOTE_SYNOP + url[len(ANCIEN_HOTE_SYNOP):])
+    return urls
+
+
 def telecharger_fichier(url, destination):
-    """Télécharge une ressource si elle n'existe pas déjà."""
+    """Télécharge une ressource si elle n'existe pas déjà.
+
+    Si l'adresse pointe vers l'ancien hôte des archives SYNOP, le nouvel hôte
+    est essayé en premier.
+    """
 
     destination = Path(destination)
 
@@ -178,24 +203,76 @@ def telecharger_fichier(url, destination):
         f"Téléchargement : {destination.name}"
     )
 
-    with requests.get(
-        url,
-        stream=True,
-        timeout=120,
-    ) as reponse:
+    derniere_erreur = None
 
-        reponse.raise_for_status()
+    for adresse in urls_a_essayer(url):
 
-        with destination.open("wb") as fichier:
+        try:
+            with requests.get(
+                adresse,
+                stream=True,
+                timeout=120,
+            ) as reponse:
 
-            for bloc in reponse.iter_content(
-                chunk_size=1024 * 1024
-            ):
+                reponse.raise_for_status()
 
-                if bloc:
-                    fichier.write(bloc)
+                # Écriture dans un fichier temporaire : un téléchargement
+                # interrompu ne laisse pas de fichier incomplet.
+                temporaire = destination.with_suffix(destination.suffix + ".part")
 
-    return destination
+                with temporaire.open("wb") as fichier:
+
+                    for bloc in reponse.iter_content(
+                        chunk_size=1024 * 1024
+                    ):
+
+                        if bloc:
+                            fichier.write(bloc)
+
+                temporaire.replace(destination)
+                return destination
+
+        except requests.RequestException as erreur:
+            derniere_erreur = erreur
+
+    raise RuntimeError(
+        f"Téléchargement impossible : {url}"
+    ) from derniere_erreur
+
+
+def telecharger_ressources_stations(catalogue=None):
+    """Télécharge la liste officielle des stations, les postes et les régions.
+
+    Sources :
+    - liste des stations et postes SYNOP : jeu « Archive Synop OMM »
+      (data.gouv.fr, même jeu que les archives) ;
+    - contours des régions : URL_REGIONS.
+    """
+
+    catalogue = catalogue or recuperer_catalogue()
+
+    a_trouver = {
+        "liste_stations": FICHIER_STATIONS,
+        "postes_synop": FICHIER_POSTES_GEOJSON,
+    }
+
+    for ressource in catalogue.get("resources", []):
+
+        titre = ressource.get("title", "").lower()
+
+        for motif, destination in a_trouver.items():
+            if motif in titre:
+                telecharger_fichier(ressource["url"], destination)
+
+    for motif, destination in a_trouver.items():
+        if not destination.exists():
+            raise RuntimeError(
+                f"Ressource « {motif} » introuvable dans le catalogue data.gouv.fr."
+            )
+
+    telecharger_fichier(URL_REGIONS, FICHIER_REGIONS)
+
+    return [FICHIER_STATIONS, FICHIER_POSTES_GEOJSON, FICHIER_REGIONS]
 
 
 def telecharger_archives_synop():
@@ -895,11 +972,13 @@ def resume_selection_stations():
 # =============================================================================
 
 def main():
-    """Télécharge les archives SYNOP nécessaires au projet."""
+    """Télécharge les archives SYNOP et les ressources des stations."""
 
     fichiers = (
         telecharger_archives_synop()
     )
+
+    telecharger_ressources_stations()
 
     print()
 
