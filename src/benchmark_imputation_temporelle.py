@@ -10,9 +10,9 @@ Des séquences réellement observées sont artificiellement masquées, pour
 plusieurs longueurs de trou (de 1 point = 3 h à 16 points = 48 h). La vérité
 terrain est conservée afin de comparer les prédictions.
 
-Seules les observations de la PÉRIODE D'APPRENTISSAGE (antérieures à la fin
-de 2022, heure de Paris) sont utilisées : 2023 et le test 2024-2025
-n'interviennent jamais dans le choix de la méthode.
+Seules les observations de la PÉRIODE D'APPRENTISSAGE (2016-2022,
+heure de Paris) sont utilisées : 2015, la validation 2023 et le test
+2024-2025 n'interviennent jamais dans le choix de la méthode.
 
 Méthodes candidates (CAUSALES : elles n'utilisent que le passé)
 ------------------------------------------------------------
@@ -364,17 +364,32 @@ def construire_candidats(
 
     Mêmes conditions que sequence_est_complete, calculées d'un coup pour toute
     la série (version rapide). Seules les séquences dont TOUTES les valeurs
-    utilisées (y compris le lendemain des méthodes non causales de référence)
-    sont antérieures à la fin de la période d'apprentissage sont retenues.
+    utilisées (y compris le contexte des méthodes non causales de référence)
+    appartiennent à la période d'apprentissage 2016-2022 sont retenues.
     """
 
     decalage_24h = int(
         24 / PAS_HEURES
     )
 
-    # Dernière position utilisable : avant la fin de l'apprentissage
-    n_apprentissage = int(
-        (matrice.index < protocole.fin_apprentissage_utc()).sum()
+    # Bornes exactes de la période d'apprentissage 2016-2022.
+    # Les positions restent celles de la matrice complète car elles sont
+    # réutilisées ensuite par evaluer_sequence().
+    debut_apprentissage = protocole.debut_apprentissage_utc()
+    fin_apprentissage = protocole.fin_apprentissage_utc()
+
+    position_debut_apprentissage = int(
+        matrice.index.searchsorted(
+            debut_apprentissage,
+            side="left",
+        )
+    )
+
+    position_fin_apprentissage = int(
+        matrice.index.searchsorted(
+            fin_apprentissage,
+            side="left",
+        )
     )
 
     candidats = []
@@ -390,9 +405,23 @@ def construire_candidats(
             """Vrai si toutes les positions de debut à fin (incluses) sont observées."""
             return (cumul[fin + 1] - cumul[debut]) == (fin - debut + 1)
 
+        # Le contexte autour de la séquence doit lui aussi rester
+        # entièrement dans la période d'apprentissage 2016-2022.
+        premier_debut = (
+            position_debut_apprentissage
+            + decalage_24h
+            + 1
+        )
+
+        dernier_debut_exclus = (
+            position_fin_apprentissage
+            - longueur
+            - decalage_24h
+        )
+
         debuts = np.arange(
-            decalage_24h + 1,
-            n_apprentissage - longueur - decalage_24h,
+            premier_debut,
+            dernier_debut_exclus,
         )
 
         if len(debuts) == 0:

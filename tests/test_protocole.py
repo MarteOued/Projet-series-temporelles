@@ -1,6 +1,7 @@
 """Tests de la règle des 14 h (src/protocole.py)."""
 import pandas as pd
 from src import protocole
+from src import config
 
 from src.protocole import est_connue_a_14h, fin_des_donnees_connues
 
@@ -112,3 +113,37 @@ def test_synop_12h_non_connue_en_ete():
         "2025-07-15 12:00:00+00:00",
         "2025-07-15",
     )
+
+def test_debut_apprentissage_utc():
+    """La période d'apprentissage commence le 01/01/2016 à 00 h Paris."""
+    attendu = pd.Timestamp(
+        "2016-01-01 00:00:00",
+        tz=config.FUSEAU,
+    ).tz_convert("UTC")
+
+    assert protocole.debut_apprentissage_utc() == attendu
+
+
+def test_periode_apprentissage_exclut_2015_et_2023():
+    """Seules les observations appartenant à 2016-2022 sont conservées."""
+    index = pd.DatetimeIndex([
+        "2015-12-31 21:00:00+00:00",  # avant le train
+        "2015-12-31 23:00:00+00:00",  # 01/01/2016 00 h Paris
+        "2022-12-31 22:00:00+00:00",  # encore dans le train
+        "2022-12-31 23:00:00+00:00",  # 01/01/2023 00 h Paris
+        "2023-01-01 02:00:00+00:00",  # validation
+    ])
+
+    donnees = pd.DataFrame(
+        {"valeur": [1, 2, 3, 4, 5]},
+        index=index,
+    )
+
+    resultat = protocole.periode_apprentissage(donnees)
+
+    attendu = pd.DatetimeIndex([
+        "2015-12-31 23:00:00+00:00",
+        "2022-12-31 22:00:00+00:00",
+    ])
+
+    pd.testing.assert_index_equal(resultat.index, attendu)
