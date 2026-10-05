@@ -95,6 +95,24 @@ pytest
 | 5 | Variables à 14 h et test de non-fuite | à définir | | | à écrire |
 | 6 | Benchmarks, modèles, évaluation | à définir | tables et figures dans `report/` | **coûteux** : réestimation mensuelle | à écrire |
 
+## Notebooks
+
+Les notebooks expliquent et illustrent ; le code est dans `src/`. Ils doivent tourner avec le Python
+du projet (`.venv`), pas avec un autre Python installé sur la machine (Anaconda, par exemple) :
+
+- dans VS Code : choisir le noyau `.venv` (en haut à droite du notebook) ;
+- en ligne de commande : `python -m nbconvert --to notebook --execute --inplace notebooks/<nom>.ipynb`
+  avec le Python du `.venv`. Éviter `python -m jupyter nbconvert`, qui peut lancer le Jupyter d'un
+  autre Python trouvé dans le PATH.
+
+| Notebook | Contenu |
+|---|---|
+| `01_donnees_RTE` | préparation de la consommation, disponibilité à 14 h |
+| `02_relation_conso_meteo_calendrier` | relation consommation-température, effets calendaires (2016-2022) |
+| `03_benchmarks` | benchmarks B0, B1, B2 et mesures d'erreur |
+| `exploration_meteo` | réseau des 40 stations météo |
+| `exploration_calendrier` | variables calendaires |
+
 ## Travailler à deux
 
 Voir `CONTRIBUTING.md` : une branche par personne et par sujet, pull request relue par l'autre, jamais de travail direct sur `main`.
