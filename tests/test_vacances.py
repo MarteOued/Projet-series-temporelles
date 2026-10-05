@@ -11,6 +11,18 @@ from src.vacances import (
 )
 
 
+
+import pytest
+
+from src.vacances import FICHIER_API, FICHIER_HISTORIQUE
+
+# Ces tests lisent les vrais calendriers scolaires : ignorés tant qu'ils ne sont pas
+# téléchargés (python -m src.calendrier).
+pytestmark = pytest.mark.skipif(
+    not (FICHIER_API.exists() and FICHIER_HISTORIQUE.exists()),
+    reason="calendriers scolaires absents : lancer python -m src.calendrier",
+)
+
 def test_nombre_periodes_api():
     """L'API doit fournir 9 années x 3 zones x 5 vacances."""
     vacances = charger_vacances_api()

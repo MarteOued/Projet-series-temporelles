@@ -3,26 +3,28 @@ Correction contrôlée des anomalies météorologiques SYNOP.
 
 Ce script intervient APRES :
     1. l'imputation spatiale ;
-    2. l'imputation temporelle ;
-    3. le diagnostic des anomalies.
+    2. l'imputation temporelle.
 
 Principe
 --------
-Deux observations originales ont été identifiées comme fortement incohérentes
-à la fois temporellement et spatialement :
+Les observations aberrantes ne sont plus désignées à la main : elles sont
+détectées par une RÈGLE, appliquée automatiquement à toute la période.
 
-    - MARIGNANE (07650)
-      2023-08-09 09:00 UTC
-      valeur originale : 0.0 °C
+Une observation ORIGINALE est déclarée aberrante si, à la fois :
+    1. elle s'écarte de plus de config.SEUIL_ANOMALIE_SAUT_3H (15 °C) de la
+       valeur de la même station 3 h avant (uniquement le passé) ;
+    2. elle s'écarte de la valeur prédite AU MÊME INSTANT par ses stations
+       voisines de plus que le plus grand écart jamais observé sur la période
+       d'apprentissage (seuil appris automatiquement, environ 14 °C).
 
-    - ST GIRONS (07627)
-      2025-09-23 15:00 UTC
-      valeur originale : -11.3 °C
+Les corrélations, les voisins et les régressions sont appris sur la période
+d'apprentissage uniquement (avant la fin de 2022) : la règle n'a jamais vu
+2023 ni le test 2024-2025.
 
-Ces observations sont :
+Les observations détectées sont :
     1. conservées dans un journal ;
     2. remplacées temporairement par NaN ;
-    3. réimputées à partir de stations voisines fortement corrélées ;
+    3. réimputées à partir des stations voisines au même instant ;
     4. sauvegardées dans une NOUVELLE matrice finale.
 
 Aucun fichier précédent n'est écrasé.
@@ -33,24 +35,26 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
+from src import config, protocole
 
 
 # =============================================================================
 # CONFIGURATION
 # =============================================================================
 
-RACINE_PROJET = Path(__file__).resolve().parents[1]
 
-DOSSIER_METEO = (
-    RACINE_PROJET
-    / "data"
-    / "donnees-traitees"
-    / "meteo"
-)
+DOSSIER_METEO = config.DOSSIER_METEO_TRAITE
 
 FICHIER_ENTREE = (
     DOSSIER_METEO
     / "temperatures_synop_completes.csv"
+)
+
+# Matrice avant toute imputation : sert à savoir quelles valeurs sont des
+# observations originales (seules elles peuvent être déclarées aberrantes).
+FICHIER_ORIGINAL = (
+    DOSSIER_METEO
+    / "temperatures_synop_originales.csv"
 )
 
 FICHIER_SORTIE = (
@@ -72,31 +76,10 @@ MIN_OBSERVATIONS = 100
 
 
 # =============================================================================
-# ANOMALIES CONFIRMEES
+# REGLE DE DETECTION
 # =============================================================================
 
-ANOMALIES = [
-    {
-        "station": "07650",
-        "timestamp": "2023-08-09 09:00:00+00:00",
-        "valeur_attendue": 0.0,
-        "nom_station": "MARIGNANE",
-        "raison": (
-            "Incoherence spatio-temporelle forte : valeur de 0.0 °C "
-            "alors que les stations voisines présentent environ 23 à 30 °C."
-        ),
-    },
-    {
-        "station": "07627",
-        "timestamp": "2025-09-23 15:00:00+00:00",
-        "valeur_attendue": -11.3,
-        "nom_station": "ST GIRONS",
-        "raison": (
-            "Incoherence spatio-temporelle forte : valeur de -11.3 °C "
-            "alors que les stations voisines présentent environ 9 à 16 °C."
-        ),
-    },
-]
+SEUIL_SAUT_3H = config.SEUIL_ANOMALIE_SAUT_3H
 
 
 # =============================================================================
@@ -113,18 +96,21 @@ def titre(texte):
 # LECTURE DE LA MATRICE
 # =============================================================================
 
-def lire_matrice():
+def lire_matrice(chemin=None):
     """
-    Lit la matrice complète issue de l'imputation temporelle.
+    Lit une matrice de températures (par défaut : la matrice complète issue
+    de l'imputation temporelle).
     """
 
-    if not FICHIER_ENTREE.exists():
+    chemin = FICHIER_ENTREE if chemin is None else chemin
+
+    if not chemin.exists():
         raise FileNotFoundError(
-            f"Fichier introuvable : {FICHIER_ENTREE}"
+            f"Fichier introuvable : {chemin}"
         )
 
     df = pd.read_csv(
-        FICHIER_ENTREE,
+        chemin,
         index_col=0,
         parse_dates=True,
     )
@@ -141,98 +127,103 @@ def lire_matrice():
 
 
 # =============================================================================
-# CONTROLE DES ANOMALIES
+# DETECTION DES ANOMALIES
 # =============================================================================
 
-def verifier_anomalies(df):
+def ajuster_modeles_apprentissage(df_original):
+    """Apprend, pour chaque station, ses voisins et ses régressions.
+
+    Uniquement sur la période d'apprentissage et sur les observations
+    originales. Renvoie {station: (voisins, sous-modèles)}.
     """
-    Vérifie que les observations à corriger existent réellement
-    et correspondent aux valeurs diagnostiquées.
+
+    apprentissage = protocole.periode_apprentissage(df_original)
+    correlations = calculer_correlations(apprentissage)
+
+    return {
+        station: construire_sous_modeles(apprentissage, correlations, station)
+        for station in df_original.columns
+    }
+
+
+def residus_spatiaux(df, modeles_par_station):
+    """Écart entre chaque valeur et la prédiction de ses voisins au même instant.
+
+    La prédiction utilise le modèle aux 3 voisins (les voisins sont toujours
+    disponibles dans la matrice complète). NaN si ce modèle n'existe pas.
     """
 
-    titre("CONTROLE DES ANOMALIES A CORRIGER")
+    residus = {}
 
-    controles = []
+    for station, (voisins, modeles) in modeles_par_station.items():
 
-    for anomalie in ANOMALIES:
+        cle = tuple(voisins)
 
-        station = anomalie["station"]
+        if cle not in modeles:
+            residus[station] = pd.Series(np.nan, index=df.index)
+            continue
 
-        timestamp = pd.Timestamp(
-            anomalie["timestamp"]
-        )
+        X = df[voisins].to_numpy(dtype=float)
+        complet = ~np.isnan(X).any(axis=1)
+        prediction = np.full(len(df), np.nan)
+        prediction[complet] = modeles[cle]["modele"].predict(X[complet])
+        residus[station] = df[station] - prediction
 
-        valeur_attendue = anomalie[
-            "valeur_attendue"
-        ]
+    return pd.DataFrame(residus, index=df.index)[df.columns]
 
-        if station not in df.columns:
-            raise ValueError(
-                f"Station absente : {station}"
-            )
 
-        if timestamp not in df.index:
-            raise ValueError(
-                f"Timestamp absent : {timestamp}"
-            )
+def seuil_spatial_appris(residus, df_original):
+    """Plus grand écart aux voisins observé sur la période d'apprentissage.
 
-        valeur = df.loc[
-            timestamp,
-            station
-        ]
+    Une observation plus incohérente avec ses voisines que tout ce qui a été
+    vu pendant l'apprentissage est suspecte.
+    """
 
-        difference = abs(
-            float(valeur)
-            - float(valeur_attendue)
-        )
+    observes = residus.where(df_original.notna())
+    return float(protocole.periode_apprentissage(observes).abs().max().max())
 
-        conforme = difference < 1e-6
 
-        controles.append(
+def detecter_anomalies(df_complet, df_original, residus, seuil_spatial,
+                       seuil_saut=SEUIL_SAUT_3H):
+    """Applique la règle à toute la période. Renvoie une ligne par anomalie.
+
+    Seules les observations originales peuvent être déclarées aberrantes.
+    Le saut compare chaque valeur à celle de la même station 3 h avant
+    (le passé seulement).
+    """
+
+    saut = (df_complet - df_complet.shift(1)).abs()
+
+    suspect = (
+        df_original.notna()
+        & (saut > seuil_saut)
+        & (residus.abs() > seuil_spatial)
+    )
+
+    lignes = []
+
+    for timestamp, station in suspect.stack().loc[lambda x: x].index:
+        lignes.append(
             {
-                "station": station,
-                "nom_station": anomalie[
-                    "nom_station"
-                ],
                 "timestamp": timestamp,
-                "valeur_trouvee": valeur,
-                "valeur_attendue": valeur_attendue,
-                "controle_ok": conforme,
+                "station": station,
+                "valeur_originale": float(df_original.loc[timestamp, station]),
+                "saut_3h": float(saut.loc[timestamp, station]),
+                "ecart_voisins": float(residus.loc[timestamp, station]),
+                "raison": (
+                    f"saut de {saut.loc[timestamp, station]:.1f} °C en 3 h "
+                    f"(> {seuil_saut:.0f}) et écart de "
+                    f"{residus.loc[timestamp, station]:.1f} °C aux voisines "
+                    f"(> {seuil_spatial:.1f}, maximum de l'apprentissage)"
+                ),
             }
         )
 
-        print(
-            f"\n{station} - "
-            f"{anomalie['nom_station']}"
-        )
-
-        print(
-            f"Timestamp : {timestamp}"
-        )
-
-        print(
-            f"Valeur trouvée : "
-            f"{valeur:.3f} °C"
-        )
-
-        print(
-            f"Valeur attendue : "
-            f"{valeur_attendue:.3f} °C"
-        )
-
-        print(
-            "Contrôle : "
-            + ("OK" if conforme else "ECHEC")
-        )
-
-        if not conforme:
-            raise ValueError(
-                "La valeur présente dans le fichier "
-                "ne correspond pas à celle diagnostiquée. "
-                "Correction interrompue."
-            )
-
-    return pd.DataFrame(controles)
+    return pd.DataFrame(
+        lignes,
+        columns=["timestamp", "station", "valeur_originale", "saut_3h",
+                 "ecart_voisins", "raison"],
+    )
 
 
 # =============================================================================
@@ -498,217 +489,71 @@ def predire_adaptatif(
 # CORRECTION
 # =============================================================================
 
-def corriger_anomalies(df):
+def corriger_anomalies(df, anomalies, modeles_par_station, noms=None):
     """
-    Corrige uniquement les anomalies explicitement confirmées.
+    Remplace chaque anomalie détectée par la prédiction de ses voisines au même
+    instant (modèles appris sur la période d'apprentissage).
     """
-
-    titre(
-        "PREPARATION DE LA CORRECTION"
-    )
-
-    df_corrige = df.copy()
-
-    valeurs_originales = {}
-
-    # -------------------------------------------------------------------------
-    # 1. Sauvegarde des valeurs originales
-    # -------------------------------------------------------------------------
-
-    for anomalie in ANOMALIES:
-
-        station = anomalie[
-            "station"
-        ]
-
-        timestamp = pd.Timestamp(
-            anomalie["timestamp"]
-        )
-
-        valeur = df_corrige.loc[
-            timestamp,
-            station
-        ]
-
-        valeurs_originales[
-            (timestamp, station)
-        ] = float(valeur)
-
-        print(
-            f"{timestamp} | "
-            f"{station} | "
-            f"{valeur:.3f} °C "
-            f"-> NaN temporaire"
-        )
-
-        # Important :
-        # l'anomalie est retirée AVANT le calcul
-        # des corrélations et des régressions.
-        df_corrige.loc[
-            timestamp,
-            station
-        ] = np.nan
-
-    # -------------------------------------------------------------------------
-    # 2. Corrélations recalculées sans les anomalies
-    # -------------------------------------------------------------------------
-
-    titre(
-        "RECALCUL DES CORRELATIONS SANS LES ANOMALIES"
-    )
-
-    correlations = calculer_correlations(
-        df_corrige
-    )
-
-    print(
-        "Dimensions :",
-        correlations.shape,
-    )
-
-    # -------------------------------------------------------------------------
-    # 3. Correction de chaque anomalie
-    # -------------------------------------------------------------------------
 
     titre(
         "REIMPUTATION DES ANOMALIES"
     )
 
+    noms = noms or {}
+    df_corrige = df.copy()
+
+    # Les anomalies sont retirées AVANT toute prédiction : une anomalie ne peut
+    # pas servir à en corriger une autre.
+    for ligne in anomalies.itertuples(index=False):
+        df_corrige.loc[ligne.timestamp, ligne.station] = np.nan
+
     journal = []
 
-    for anomalie in ANOMALIES:
+    for ligne in anomalies.itertuples(index=False):
 
-        station = anomalie[
-            "station"
-        ]
-
-        nom_station = anomalie[
-            "nom_station"
-        ]
-
-        timestamp = pd.Timestamp(
-            anomalie["timestamp"]
-        )
-
-        valeur_originale = (
-            valeurs_originales[
-                (timestamp, station)
-            ]
-        )
-
-        voisins, modeles = (
-            construire_sous_modeles(
-                df_corrige,
-                correlations,
-                station,
-            )
-        )
-
-        print(
-            f"\n{station} - "
-            f"{nom_station}"
-        )
-
-        print(
-            "Meilleurs voisins : "
-            + ", ".join(voisins)
-        )
-
-        print(
-            "Nombre de sous-modèles : "
-            f"{len(modeles)}"
-        )
+        voisins, modeles = modeles_par_station[ligne.station]
 
         resultat = predire_adaptatif(
             df_corrige,
-            timestamp,
-            station,
+            ligne.timestamp,
+            ligne.station,
             voisins,
             modeles,
         )
 
-        prediction = resultat[
-            "prediction"
-        ]
+        prediction = resultat["prediction"]
+        statut = "non_corrigee" if pd.isna(prediction) else "corrigee"
 
-        if pd.isna(prediction):
+        if statut == "corrigee":
+            df_corrige.loc[ligne.timestamp, ligne.station] = prediction
 
-            print(
-                "ECHEC : aucune prédiction "
-                "possible."
-            )
-
-            statut = "non_corrigee"
-
-        else:
-
-            df_corrige.loc[
-                timestamp,
-                station
-            ] = prediction
-
-            print(
-                f"Valeur originale : "
-                f"{valeur_originale:.3f} °C"
-            )
-
-            print(
-                f"Valeur corrigée : "
-                f"{prediction:.3f} °C"
-            )
-
-            print(
-                "Voisins utilisés : "
-                + ", ".join(
-                    resultat[
-                        "voisins_utilises"
-                    ]
-                )
-            )
-
-            print(
-                "Nombre de voisins : "
-                f"{resultat['nombre_voisins']}"
-            )
-
-            statut = "corrigee"
+        print(
+            f"{ligne.timestamp} | {ligne.station} "
+            f"{noms.get(ligne.station, '')} | "
+            f"{ligne.valeur_originale:.1f} °C -> {prediction:.1f} °C"
+        )
 
         journal.append(
             {
-                "timestamp": timestamp,
-                "station": station,
-                "nom_station": nom_station,
-                "valeur_originale": (
-                    valeur_originale
-                ),
-                "valeur_corrigee": (
-                    prediction
-                ),
-                "voisins_utilises": ",".join(
-                    resultat[
-                        "voisins_utilises"
-                    ]
-                ),
-                "nombre_voisins": resultat[
-                    "nombre_voisins"
-                ],
-                "observations_apprentissage": (
-                    resultat[
-                        "n_apprentissage"
-                    ]
-                ),
-                "methode": (
-                    "regression_spatiale_adaptative"
-                ),
-                "raison": anomalie[
-                    "raison"
-                ],
+                "timestamp": ligne.timestamp,
+                "station": ligne.station,
+                "nom_station": noms.get(ligne.station, ""),
+                "valeur_originale": ligne.valeur_originale,
+                "valeur_corrigee": prediction,
+                "voisins_utilises": ",".join(resultat["voisins_utilises"]),
+                "nombre_voisins": resultat["nombre_voisins"],
+                "observations_apprentissage": resultat["n_apprentissage"],
+                "methode": "regression_spatiale_adaptative",
+                "raison": ligne.raison,
                 "statut": statut,
             }
         )
 
     journal = pd.DataFrame(
-        journal
+        journal,
+        columns=["timestamp", "station", "nom_station", "valeur_originale",
+                 "valeur_corrigee", "voisins_utilises", "nombre_voisins",
+                 "observations_apprentissage", "methode", "raison", "statut"],
     )
 
     return df_corrige, journal
@@ -765,19 +610,11 @@ def controles_finaux(
         columns=df_original.columns,
     )
 
-    for anomalie in ANOMALIES:
-
-        timestamp = pd.Timestamp(
-            anomalie["timestamp"]
-        )
-
-        station = anomalie[
-            "station"
-        ]
+    for ligne in journal.itertuples(index=False):
 
         masque_autorise.loc[
-            timestamp,
-            station
+            ligne.timestamp,
+            ligne.station
         ] = True
 
     difference = (
@@ -947,20 +784,68 @@ def main():
     )
 
     # -------------------------------------------------------------------------
-    # Vérification avant toute modification
+    # Modèles des voisins : appris sur la période d'apprentissage
     # -------------------------------------------------------------------------
 
-    verifier_anomalies(
-        df_original
+    observations = lire_matrice(FICHIER_ORIGINAL)
+
+    titre(
+        "APPRENTISSAGE DES VOISINS (PERIODE D'APPRENTISSAGE)"
+    )
+
+    modeles_par_station = ajuster_modeles_apprentissage(observations)
+
+    # -------------------------------------------------------------------------
+    # Détection par la règle
+    # -------------------------------------------------------------------------
+
+    residus = residus_spatiaux(df_original, modeles_par_station)
+    seuil_spatial = seuil_spatial_appris(residus, observations)
+
+    titre(
+        "DETECTION DES ANOMALIES"
+    )
+
+    print(
+        f"Règle : saut > {SEUIL_SAUT_3H:.0f} °C en 3 h ET écart aux voisines "
+        f"> {seuil_spatial:.2f} °C (maximum observé sur l'apprentissage)"
+    )
+
+    anomalies = detecter_anomalies(
+        df_original,
+        observations,
+        residus,
+        seuil_spatial,
+    )
+
+    print(
+        "Anomalies détectées :",
+        len(anomalies),
+    )
+
+    print(
+        anomalies.to_string(index=False)
     )
 
     # -------------------------------------------------------------------------
     # Correction
     # -------------------------------------------------------------------------
 
+    from src.meteo import lire_liste_stations_officielles
+
+    noms = dict(
+        zip(
+            lire_liste_stations_officielles()["ID"].astype(str).str.zfill(5),
+            lire_liste_stations_officielles()["Nom"],
+        )
+    )
+
     df_corrige, journal = (
         corriger_anomalies(
-            df_original
+            df_original,
+            anomalies,
+            modeles_par_station,
+            noms,
         )
     )
 
@@ -1025,8 +910,8 @@ def main():
     )
 
     print(
-        "\nIMPORTANT : seules les deux anomalies "
-        "explicitement validées ont été corrigées."
+        "\nIMPORTANT : seules les observations détectées par la règle "
+        "ont été corrigées."
     )
 
 
