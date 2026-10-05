@@ -197,3 +197,47 @@ def test_ordre_du_pipeline_meteo():
         "src.validation_meteo", "src.temperature_france",
     ]
     assert noms == attendu
+
+def test_benchmark_temporel_exclut_2015():
+    """Le benchmark temporel doit utiliser uniquement 2016-2022."""
+    import pandas as pd
+
+    from src import protocole
+    from src.benchmark_imputation_temporelle import construire_candidats
+
+    # Grille SYNOP 3 h couvrant volontairement 2015 et 2016.
+    index = pd.date_range(
+        start="2015-12-20 00:00:00",
+        end="2016-01-10 00:00:00",
+        freq="3h",
+        tz="UTC",
+    )
+
+    matrice = pd.DataFrame(
+        {
+            "07149": range(len(index)),
+        },
+        index=index,
+        dtype=float,
+    )
+
+    candidats = construire_candidats(
+        matrice=matrice,
+        longueur=1,
+    )
+
+    assert candidats
+
+    timestamps = [
+        matrice.index[position]
+        for _, position in candidats
+    ]
+
+    assert min(timestamps) >= protocole.debut_apprentissage_utc()
+
+    assert all(
+        protocole.debut_apprentissage_utc()
+        <= timestamp
+        < protocole.fin_apprentissage_utc()
+        for timestamp in timestamps
+    )
