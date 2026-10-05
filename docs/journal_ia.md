@@ -17,6 +17,9 @@ Chacun doit pouvoir tout expliquer à l'oral.
 | 2026-10-03 | Martine | Claude Code | Graphique de la consommation par année | Barres avec un axe ne partant pas de 0 | Modifiée | Une barre doit partir de 0 ; remplacé par des points reliés |
 | 2026-10-03 | Martine | Claude Code | Documenter la disponibilité des données à 14 h | Section 11 du notebook, `src/protocole.py`, retard de publication mesuré sur l'API (11 à 13 min) | Gardée | Tableau des retards calculé et vérifié automatiquement ; `tests/test_protocole.py` ; descriptions officielles des jeux ODRÉ |
 | 2026-10-03 | Martine | Claude Code | Déplacer le code du notebook dans `src/rte.py` | Fonctions par étape, notebook qui les appelle | Gardée | `python -m src.rte` produit un fichier identique ligne à ligne à celui du notebook ; 18 tests passent |
+| 2026-10-05 | Martine | Claude Code | Relire le travail météo et calendrier de Khadim | Bilan : calcul reproductible, mais fuite d'information dans l'imputation temporelle, stations corses hors périmètre, documentation incomplète | Gardée, transmise à Khadim | Pipeline relancé depuis les données brutes (18 fichiers identiques) ; périmètre vérifié : conso nationale = somme exacte des 12 régions continentales |
+| 2026-10-05 | Martine | Claude Code | Écrire les benchmarks B1, B2 et les mesures d'erreur | `src/benchmarks.py`, `src/evaluation.py`, tests, notebook 03 | Gardée | Tests sur des exemples calculables à la main ; règle des 14 h vérifiée pour chaque jour, et test qu'une triche est bien détectée |
+| 2026-10-05 | Martine | Claude Code | Commenter le graphique de la semaine du 16 janvier 2023 | Commentaire écrit : « en début de semaine, les benchmarks suivent bien » | Modifiée | En regardant le graphique, les benchmarks sont trop bas toute la semaine (semaine précédente plus douce) : commentaire corrigé |
 
 ## Les trois exemples exigés dans le rapport
 

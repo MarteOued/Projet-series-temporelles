@@ -53,10 +53,10 @@ src/
   calendrier.py        variables calendaires                                    (à écrire)
   protocole.py         règle des 14 h (écrite) et découpage chronologique       (à écrire)
   features.py          variables construites à 14 h, sans fuite                 (à écrire)
-  benchmarks.py        benchmarks sans apprentissage                            (à écrire)
+  benchmarks.py        benchmarks sans apprentissage (B1, B2)
   modeles_lineaires.py régressions linéaires                                    (à écrire)
   modeles_ml.py        gradient boosting et météo parfaite                      (à écrire)
-  evaluation.py        MAE, RMSE, total du jour, pointe, heure de pointe        (à écrire)
+  evaluation.py        MAE, RMSE, MAPE, biais, total du jour, pointe, heure de pointe
 tests/                 tests automatiques, dont le test de non-fuite
 docs/                  décisions, protocole, disponibilité des variables, journal de l'IA
 notebooks/             notebooks Colab (enveloppes autour de src/)
@@ -84,7 +84,8 @@ pytest
 | 3 | Météo | `python -m src.meteo` | `data/donnees-preparees/meteo_horaire_utc.csv` | **coûteux** : un fichier par année, mis en cache | à écrire |
 | 4 | Calendrier | `python -m src.calendrier` | `data/donnees-preparees/calendrier.csv` | rapide | à écrire |
 | 5 | Variables à 14 h et test de non-fuite | à définir | | | à écrire |
-| 6 | Benchmarks, modèles, évaluation | à définir | tables et figures dans `report/` | **coûteux** : réestimation mensuelle | à écrire |
+| 6 | Benchmarks | `python -m src.benchmarks` | scores B1 et B2 (apprentissage, validation) ; explications : `notebooks/03_benchmarks.ipynb` | rapide (quelques secondes) | disponible |
+| 7 | Modèles, évaluation | à définir | tables et figures dans `report/` | **coûteux** : réestimation mensuelle | à écrire |
 
 ## Travailler à deux
 
