@@ -98,6 +98,15 @@ DECOUPAGE = {
     ),
 }
 
+# Test bonus (décision 3) : janvier à juin 2026, données consolidées.
+# Utilisé UNE SEULE FOIS, après le test final 2024-2025, résultats présentés à
+# part. Il ne sert jamais à choisir ou régler quoi que ce soit. Les données de
+# 2026 seront chargées seulement à ce moment-là (DATA_FIN reste fin 2025).
+TEST_BONUS = (
+    dt.date(2026, 1, 1),
+    dt.date(2026, 6, 30),
+)
+
 
 # =============================================================================
 # PÉRIODE COVID
