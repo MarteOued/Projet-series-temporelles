@@ -205,3 +205,23 @@ def observation_synop_connue_a_14h(validity_time, jour_J):
         observation = observation.tz_convert("UTC")
 
     return observation <= derniere_observation_synop_utilisable(jour_J)
+
+# ---------------------------------------------------------------------------
+# Période d'apprentissage des transformations
+# ---------------------------------------------------------------------------
+
+def fin_apprentissage_utc():
+    """Premier instant APRÈS la période d'apprentissage, en UTC (borne exclue).
+
+    Tout paramètre appris sur les données (corrélations, régressions entre
+    stations, choix d'une méthode d'imputation, poids régionaux, seuils) doit
+    utiliser uniquement les observations strictement antérieures à cet instant :
+    minuit (heure de Paris) le lendemain de config.FIN_APPRENTISSAGE.
+    """
+    lendemain = pd.Timestamp(config.FIN_APPRENTISSAGE) + pd.Timedelta(days=1)
+    return lendemain.tz_localize(config.FUSEAU).tz_convert("UTC")
+
+
+def periode_apprentissage(donnees):
+    """Garde les lignes d'un tableau indexé en UTC antérieures à la fin de l'apprentissage."""
+    return donnees.loc[donnees.index < fin_apprentissage_utc()]

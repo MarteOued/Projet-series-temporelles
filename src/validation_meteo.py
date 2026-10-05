@@ -3,7 +3,8 @@ Validation finale de la matrice des températures SYNOP.
 
 Ce script contrôle la matrice finale obtenue après :
     1. imputation spatiale ;
-    2. imputation temporelle.
+    2. imputation temporelle ;
+    3. correction des anomalies détectées par la règle.
 
 Il ne modifie aucune donnée.
 
@@ -26,24 +27,19 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from src import config
 
 
 # =============================================================================
 # CONFIGURATION
 # =============================================================================
 
-RACINE_PROJET = Path(__file__).resolve().parents[1]
 
-DOSSIER_METEO = (
-    RACINE_PROJET
-    / "data"
-    / "donnees-traitees"
-    / "meteo"
-)
+DOSSIER_METEO = config.DOSSIER_METEO_TRAITE
 
 FICHIER_TEMPERATURES = (
     DOSSIER_METEO
-    / "temperatures_synop_completes.csv"
+    / "temperatures_synop_finales.csv"
 )
 
 FICHIER_STATS_STATIONS = (

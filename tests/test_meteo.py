@@ -32,6 +32,18 @@ from src.meteo import (
 )
 
 
+
+from src import config as _config
+
+# Ces tests lisent les vraies archives SYNOP : ils sont ignorés tant qu'elles ne sont pas
+# téléchargées (python -m src.meteo).
+pytestmark = pytest.mark.skipif(
+    not all((_config.DOSSIER_METEO_BRUT / f"synop_{annee}.csv.gz").exists()
+            for annee in range(_config.DATA_DEBUT.year, _config.DATA_FIN.year + 1))
+    or not (_config.DOSSIER_METEO_BRUT / "regions_2025.geojson").exists(),
+    reason="données SYNOP absentes : lancer python -m src.meteo",
+)
+
 # =============================================================================
 # LECTURE DES ARCHIVES SYNOP
 # =============================================================================

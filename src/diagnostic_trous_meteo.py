@@ -26,18 +26,14 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.config import DATA_BRUTES
+from src import config
 
 
 # =============================================================================
 # CONFIGURATION
 # =============================================================================
 
-DOSSIER_METEO = (
-    DATA_BRUTES.parent
-    / "donnees-traitees"
-    / "meteo"
-)
+DOSSIER_METEO = config.DOSSIER_METEO_TRAITE
 
 FICHIER_MATRICE_IMPUTEE = (
     DOSSIER_METEO
@@ -964,12 +960,6 @@ def verifier_coherence(
         == len(
             valeurs_residuelles
         )
-    )
-
-    # Les résultats précédents donnent 1492 NaN résiduels.
-    assert (
-        nb_nan_matrice
-        == 1492
     )
 
     journal_non_impute = journal[

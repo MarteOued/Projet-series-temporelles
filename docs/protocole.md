@@ -25,6 +25,42 @@
 | 48 h | J-1, heure H | Oui. Sert de « veille effective » quand H > 12 |
 | 168 h | J-6, heure H (même jour de la semaine précédente) | Oui, toujours |
 
+## Météo à 14 h (code : `src/protocole.py`, `src/temperature_france.py`)
+
+- Les observations SYNOP sont toutes les 3 h en UTC (0, 3, 6, …, 21 h). À 14 h le jour J, on
+  utilise la dernière observation dont l'heure locale est ≤ 13 h : **12 h UTC l'hiver,
+  9 h UTC l'été** (`derniere_observation_synop_utilisable`). Marge d'une heure par prudence.
+- Sur la grille horaire, la température **opérationnelle** de l'heure h est la dernière
+  observation de validité ≤ h (report vers l'avant), **jamais une interpolation** : interpoler
+  utiliserait l'observation suivante. Pour une prévision faite le jour J, on lit cette valeur à
+  `limite_meteo_connue(J)` (13 h, heure de Paris).
+- La version interpolée (`*_meteo_parfaite`) ne sert qu'au scénario « météo parfaite ».
+
+## Transformations apprises sur les données
+
+Tout ce qui est **appris** sur les données l'est uniquement sur la période d'apprentissage
+(observations avant le 1er janvier 2023 à 0 h, heure de Paris : `protocole.fin_apprentissage_utc()`),
+puis appliqué à toute la période. Cela concerne aujourd'hui :
+
+| Quantité apprise | Où | Données utilisées |
+|---|---|---|
+| Corrélations, voisins et régressions entre stations (imputation spatiale) | `imputation_meteo.py` | 2015-12 à 2022 |
+| Choix de la méthode d'imputation spatiale | `benchmark_imputation.py` | 2015-12 à 2022 |
+| Choix de la méthode d'imputation temporelle (causale) par longueur de trou | `benchmark_imputation_temporelle.py` | 2015-12 à 2022 |
+| Voisins, régressions et seuil de la règle d'anomalie | `correction_anomalies_meteo.py` | 2015-12 à 2022 |
+| Poids régionaux de la température pondérée | `temperature_france.py` | consommation RTE 2016-2022 |
+
+2023 sert aux choix de modélisation (validation) ; 2024-2025 ne sert à rien d'autre qu'à la note
+finale. Les tests `tests/test_anti_fuite_meteo.py` vérifient que modifier 2023-2025 ne change
+aucun de ces paramètres.
+
+## Imputation de la météo : causale
+
+Une température manquante à l'instant t n'est reconstruite qu'avec :
+- les stations voisines **au même instant t** (imputation spatiale) ;
+- ou, si tout le réseau est vide, **le passé** de la station : persistance, veille, ou persistance
+  ajustée (imputation temporelle). Jamais l'observation suivante ni le lendemain.
+
 ## Heures
 
 - Toutes les séries sont stockées en UTC. Le calendrier et l'origine de prévision sont calculés en heure de Paris.

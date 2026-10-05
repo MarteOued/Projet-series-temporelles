@@ -23,6 +23,11 @@ RACINE = Path(__file__).resolve().parent.parent
 DATA_BRUTES = RACINE / "data" / "donnees-brutes"
 DATA_INTERIM = RACINE / "data" / "interim"
 DATA_PREPAREES = RACINE / "data" / "donnees-preparees"
+# donnees-traitees : étapes de traitement de la météo (matrices, journaux,
+# diagnostics). Non versionné : tout se reconstruit avec python -m src.pipeline_meteo
+DATA_TRAITEES = RACINE / "data" / "donnees-traitees"
+DOSSIER_METEO_BRUT = DATA_BRUTES / "meteo"
+DOSSIER_METEO_TRAITE = DATA_TRAITEES / "meteo"
 
 REPORT_TABLES = RACINE / "report" / "tables"
 REPORT_FIGURES = RACINE / "report" / "figures"
@@ -178,6 +183,50 @@ STATIONS_SYNOP = None
 #
 # La décision finale sera prise avant l'évaluation sur le jeu de test.
 TEMPERATURE_NATIONALE = None
+
+# Réseau utilisé pour NETTOYER et IMPUTER : les 40 stations stables et
+# métropolitaines (sélection automatique de src/meteo.py, Corse comprise).
+#
+# Stations utilisées pour la TEMPÉRATURE FRANCE : la consommation nationale RTE
+# couvre la France continentale (elle est exactement la somme des 12 régions
+# continentales, vérifié le 2026-10-05). Les stations corses sont donc exclues
+# de la température France, mais restent dans le réseau d'imputation.
+REGIONS_EXCLUES_TEMPERATURE_FRANCE = {"94"}  # code INSEE de la Corse
+
+# Trois représentations candidates de la température France. Le choix se fera
+# sur la validation 2023 uniquement (décision 8), jamais sur le test.
+STATIONS_8_VILLES = {
+    "Paris (Orly)": "07149",
+    "Lyon (Saint-Exupéry)": "07481",
+    "Marseille (Marignane)": "07650",
+    "Lille (Lesquin)": "07015",
+    "Toulouse (Blagnac)": "07630",
+    "Bordeaux (Mérignac)": "07510",
+    "Strasbourg (Entzheim)": "07190",
+    "Nantes (Bouguenais)": "07222",
+}
+TEMPERATURE_FRANCE_CANDIDATES = ["temp_8_villes", "temp_38_simple", "temp_38_ponderee"]
+
+
+# ---------------------------------------------------------------------------
+# Paramètres appris sur les données : période d'apprentissage uniquement
+# ---------------------------------------------------------------------------
+#
+# Toute quantité estimée sur les données météo (corrélations, voisins,
+# régressions entre stations, choix d'une méthode d'imputation, poids
+# régionaux, seuils d'anomalie) est apprise sur les observations antérieures
+# à la fin de la période d'apprentissage (heure de Paris), jamais sur 2023-2025.
+FIN_APPRENTISSAGE = DECOUPAGE["apprentissage"][1]  # 31 décembre 2022
+
+# Règle de détection des observations aberrantes (appliquée automatiquement à
+# toute la période, src/correction_anomalies_meteo.py). Une observation
+# originale est déclarée aberrante si :
+# - elle s'écarte de plus de SEUIL_ANOMALIE_SAUT_3H °C de la valeur de la même
+#   station 3 h avant (uniquement le passé) ;
+# - ET elle s'écarte de la valeur prédite au même instant par ses voisines de
+#   plus que le plus grand écart observé sur la période d'apprentissage. Ce
+#   second seuil est APPRIS par le code (environ 14 °C), pas fixé à la main.
+SEUIL_ANOMALIE_SAUT_3H = 15.0
 
 
 # ---------------------------------------------------------------------------

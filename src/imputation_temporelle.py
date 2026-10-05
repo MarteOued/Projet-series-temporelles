@@ -1,17 +1,19 @@
 """
 Imputation temporelle finale des températures SYNOP.
 
-Ce script intervient APRES l'imputation spatiale.
+Ce script intervient APRES l'imputation spatiale. Il traite les valeurs qui
+restent manquantes, surtout des pannes de tout le réseau (aucune station
+voisine disponible au même instant).
 
-Principe retenu à partir du benchmark temporel :
-    - trou de 1 point  (3 h)  : interpolation linéaire ;
-    - trou de 2 points (6 h)  : méthode hybride ;
-    - trou de 3 points (9 h)  : méthode hybride ;
-    - trou de 8 points (24 h) : méthode journalière +/- 24 h.
+Règle : l'imputation est CAUSALE. Une valeur manquante à l'instant t n'est
+reconstruite qu'avec des observations antérieures au trou. Aucune méthode
+n'utilise l'observation suivante ni le lendemain : sinon, une prévision faite
+à 14 h pourrait s'appuyer sur une température qui n'existait pas encore.
 
-La méthode hybride est la moyenne entre :
-    - l'interpolation linéaire ;
-    - l'estimation journalière +/- 24 h.
+Méthodes : persistance, veille, persistance ajustée (voir plus bas). La méthode
+de chaque longueur de trou est choisie par le benchmark temporel, calculé sur
+la période d'apprentissage uniquement, et la règle fonctionne pour une
+longueur de trou quelconque.
 
 Le script :
     1. lit la matrice après imputation spatiale ;
@@ -27,20 +29,15 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from src import config
 
 
 # =============================================================================
 # CONFIGURATION
 # =============================================================================
 
-RACINE_PROJET = Path(__file__).resolve().parents[1]
 
-DOSSIER_METEO = (
-    RACINE_PROJET
-    / "data"
-    / "donnees-traitees"
-    / "meteo"
-)
+DOSSIER_METEO = config.DOSSIER_METEO_TRAITE
 
 FICHIER_ENTREE = (
     DOSSIER_METEO
@@ -158,232 +155,139 @@ def detecter_sequences_manquantes(serie):
 
 
 # =============================================================================
-# METHODE 1 : INTERPOLATION LINEAIRE
+# METHODES CAUSALES
 # =============================================================================
+#
+# Règle commune : pour imputer la valeur à la position `pos`, on n'utilise que
+# des observations situées AVANT le trou (positions < debut_pos). Aucune méthode
+# ne regarde l'observation suivante ni le lendemain : une valeur imputée à
+# l'instant t ne dépend que de ce qui était connu à l'instant t.
+#
+# Les fonctions reçoivent un tableau numpy (la série d'une station, après
+# imputation spatiale) et renvoient une liste de prédictions (NaN si la méthode
+# ne peut pas calculer un point).
 
-def prediction_lineaire(
-    serie_reference,
-    debut_pos,
-    fin_pos
-):
+PAS_HEURES = config.PAS_SYNOP_HEURES
+DECALAGE_24H = 24 // PAS_HEURES           # 8 positions = 24 heures
+NB_JOURS_RECUL_MAX = 7                    # on remonte au plus 7 jours en arrière
+
+METHODES_CAUSALES = ["persistance", "veille", "persistance_ajustee"]
+
+
+def _valeur(serie, position):
+    """Valeur à une position, ou NaN si la position sort de la série."""
+    if 0 <= position < len(serie):
+        return float(serie[position])
+    return np.nan
+
+
+def prediction_persistance(serie, debut_pos, fin_pos):
+    """Dernière valeur observée avant le trou, recopiée sur tout le trou."""
+    derniere = _valeur(serie, debut_pos - 1)
+    return [derniere] * (fin_pos - debut_pos + 1)
+
+
+def prediction_veille(serie, debut_pos, fin_pos):
+    """Même heure la veille (ou 2, 3... jours avant si la veille manque aussi).
+
+    Seules les positions antérieures au début du trou sont utilisées.
     """
-    Interpolation linéaire entre l'observation précédant
-    le trou et l'observation suivant le trou.
-
-    Important :
-    la série de référence n'est pas modifiée pendant
-    le calcul.
-    """
-
-    n = len(serie_reference)
-
-    pos_avant = debut_pos - 1
-    pos_apres = fin_pos + 1
-
-    if pos_avant < 0 or pos_apres >= n:
-        return None
-
-    valeur_avant = serie_reference.iloc[pos_avant]
-    valeur_apres = serie_reference.iloc[pos_apres]
-
-    if pd.isna(valeur_avant) or pd.isna(valeur_apres):
-        return None
-
-    longueur = fin_pos - debut_pos + 1
-
     predictions = []
-
-    for k in range(1, longueur + 1):
-
-        poids = k / (longueur + 1)
-
-        prediction = (
-            valeur_avant
-            + poids
-            * (valeur_apres - valeur_avant)
-        )
-
-        predictions.append(float(prediction))
-
-    return predictions
-
-
-# =============================================================================
-# METHODE 2 : JOURNALIERE +/- 24 H
-# =============================================================================
-
-def prediction_journaliere(
-    serie_reference,
-    debut_pos,
-    fin_pos
-):
-    """
-    Pour chaque timestamp manquant, utilise :
-
-        T(t - 24 h)
-        T(t + 24 h)
-
-    et prend leur moyenne.
-
-    Si une seule des deux valeurs est disponible,
-    elle est utilisée seule.
-
-    Si aucune n'est disponible, la prédiction
-    est impossible pour ce point.
-    """
-
-    index = serie_reference.index
-
-    predictions = []
-
     for pos in range(debut_pos, fin_pos + 1):
-
-        timestamp = index[pos]
-
-        timestamp_avant = (
-            timestamp
-            - pd.Timedelta(hours=24)
-        )
-
-        timestamp_apres = (
-            timestamp
-            + pd.Timedelta(hours=24)
-        )
-
-        valeurs = []
-
-        if timestamp_avant in index:
-
-            valeur = serie_reference.loc[
-                timestamp_avant
-            ]
-
-            if pd.notna(valeur):
-                valeurs.append(float(valeur))
-
-        if timestamp_apres in index:
-
-            valeur = serie_reference.loc[
-                timestamp_apres
-            ]
-
-            if pd.notna(valeur):
-                valeurs.append(float(valeur))
-
-        if len(valeurs) == 0:
-            predictions.append(np.nan)
-
-        else:
-            predictions.append(
-                float(np.mean(valeurs))
-            )
-
+        valeur = np.nan
+        for jours in range(1, NB_JOURS_RECUL_MAX + 1):
+            position = pos - jours * DECALAGE_24H
+            if position < debut_pos:
+                valeur = _valeur(serie, position)
+                if not np.isnan(valeur):
+                    break
+        predictions.append(valeur)
     return predictions
 
 
-# =============================================================================
-# METHODE 3 : HYBRIDE
-# =============================================================================
+def prediction_persistance_ajustee(serie, debut_pos, fin_pos):
+    """Dernière valeur observée + évolution de la veille sur les mêmes heures.
 
-def prediction_hybride(
-    serie_reference,
-    debut_pos,
-    fin_pos
-):
+    T(t) ≈ T(dernière obs) + [T(t − 24 h) − T(dernière obs − 24 h)].
+    Le niveau vient de la dernière observation, la forme de la journée (cycle
+    jour/nuit) vient de la veille. Si la veille manque, on recule de 24 h de plus.
     """
-    Combine :
-
-        interpolation linéaire
-        +
-        estimation journalière +/- 24 h
-
-    La prédiction hybride est leur moyenne lorsque
-    les deux sont disponibles.
-
-    Si une seule méthode est disponible, elle est
-    utilisée comme repli.
-    """
-
-    pred_lineaire = prediction_lineaire(
-        serie_reference,
-        debut_pos,
-        fin_pos
-    )
-
-    pred_journaliere = prediction_journaliere(
-        serie_reference,
-        debut_pos,
-        fin_pos
-    )
-
-    longueur = fin_pos - debut_pos + 1
-
+    derniere_pos = debut_pos - 1
+    derniere = _valeur(serie, derniere_pos)
     predictions = []
-
-    for i in range(longueur):
-
-        valeurs = []
-
-        if pred_lineaire is not None:
-
-            valeur = pred_lineaire[i]
-
-            if pd.notna(valeur):
-                valeurs.append(float(valeur))
-
-        valeur_j = pred_journaliere[i]
-
-        if pd.notna(valeur_j):
-            valeurs.append(float(valeur_j))
-
-        if len(valeurs) == 0:
-            predictions.append(np.nan)
-
-        else:
-            predictions.append(
-                float(np.mean(valeurs))
-            )
-
+    for pos in range(debut_pos, fin_pos + 1):
+        valeur = np.nan
+        if not np.isnan(derniere):
+            for jours in range(1, NB_JOURS_RECUL_MAX + 1):
+                recul = jours * DECALAGE_24H
+                if pos - recul >= debut_pos:
+                    continue  # ce point de la veille est encore dans le trou
+                avant = _valeur(serie, pos - recul)
+                reference = _valeur(serie, derniere_pos - recul)
+                if not (np.isnan(avant) or np.isnan(reference)):
+                    valeur = derniere + (avant - reference)
+                    break
+        predictions.append(valeur)
     return predictions
+
+
+FONCTIONS_METHODES = {
+    "persistance": prediction_persistance,
+    "veille": prediction_veille,
+    "persistance_ajustee": prediction_persistance_ajustee,
+}
 
 
 # =============================================================================
 # CHOIX DE LA METHODE
 # =============================================================================
 
-def choisir_methode(longueur):
+FICHIER_CHOIX = DOSSIER_METEO / "benchmark_imputation_temporelle.csv"
+
+
+def lire_choix_methodes(chemin=None):
+    """Meilleure méthode causale pour chaque longueur testée par le benchmark.
+
+    Le benchmark (src/benchmark_imputation_temporelle.py) est calculé sur la
+    période d'apprentissage uniquement. Renvoie un dict {longueur: méthode}.
     """
-    Choix issu directement du benchmark temporel.
+    chemin = FICHIER_CHOIX if chemin is None else chemin
+    if not chemin.exists():
+        raise FileNotFoundError(
+            f"Résultats du benchmark temporel introuvables : {chemin}. "
+            "Lancer d'abord python -m src.benchmark_imputation_temporelle."
+        )
+    resultats = pd.read_csv(chemin)
+    causales = resultats[resultats["methode"].isin(METHODES_CAUSALES)]
+    meilleures = causales.loc[causales.groupby("longueur_points")["MAE"].idxmin()]
+    return dict(zip(meilleures["longueur_points"].astype(int), meilleures["methode"]))
 
-    1 point  -> linéaire
-    2 points -> hybride
-    3 points -> hybride
-    8 points -> journalière +/- 24 h
+
+def choisir_methode(longueur, choix):
+    """Méthode à utiliser pour un trou de `longueur` points, quelle que soit sa longueur.
+
+    On prend le choix du benchmark pour la plus grande longueur testée qui ne
+    dépasse pas `longueur` (ou la plus petite longueur testée si le trou est
+    plus court que toutes).
     """
-
-    if longueur == 1:
-        return "lineaire"
-
-    if longueur in (2, 3):
-        return "hybride"
-
-    if longueur == 8:
-        return "journaliere"
-
-    return "non_referencee"
+    longueurs = sorted(choix)
+    candidates = [l for l in longueurs if l <= longueur]
+    reference = candidates[-1] if candidates else longueurs[0]
+    return choix[reference]
 
 
 # =============================================================================
 # IMPUTATION TEMPORELLE
 # =============================================================================
 
-def imputer_temporellement(df):
-    """
-    Impute les NaN résiduels de la matrice.
+def imputer_temporellement(df, choix):
+    """Impute les NaN résiduels de la matrice avec une méthode causale.
 
-    Une copie figée de la matrice d'entrée sert de référence.
-    Ainsi, une valeur imputée temporellement n'est jamais
-    réutilisée pour calculer une autre imputation.
+    Une copie figée de la matrice d'entrée sert de référence : une valeur
+    imputée temporellement n'est jamais réutilisée pour en calculer une autre.
+    Si la méthode choisie ne peut pas calculer un point (données d'avant
+    absentes), on essaie les autres méthodes causales dans l'ordre :
+    persistance ajustée, veille, persistance.
     """
 
     reference = df.copy(deep=True)
@@ -393,158 +297,53 @@ def imputer_temporellement(df):
 
     for station in reference.columns:
 
-        serie_reference = reference[station]
+        serie = reference[station].to_numpy(dtype=float)
 
-        sequences = detecter_sequences_manquantes(
-            serie_reference
-        )
-
-        for sequence in sequences:
+        for sequence in detecter_sequences_manquantes(reference[station]):
 
             debut_pos = sequence["debut_pos"]
             fin_pos = sequence["fin_pos"]
             longueur = sequence["longueur"]
 
-            methode = choisir_methode(longueur)
+            methode_choisie = choisir_methode(longueur, choix)
+            ordre = [methode_choisie] + [
+                m for m in ["persistance_ajustee", "veille", "persistance"]
+                if m != methode_choisie
+            ]
+            predictions_par_methode = {
+                m: FONCTIONS_METHODES[m](serie, debut_pos, fin_pos) for m in ordre
+            }
 
-            # ---------------------------------------------------------
-            # Calcul des prédictions
-            # ---------------------------------------------------------
+            for j, pos in enumerate(range(debut_pos, fin_pos + 1)):
 
-            if methode == "lineaire":
+                prediction = np.nan
+                methode_utilisee = ""
+                for m in ordre:
+                    if not np.isnan(predictions_par_methode[m][j]):
+                        prediction = predictions_par_methode[m][j]
+                        methode_utilisee = m
+                        break
 
-                predictions = prediction_lineaire(
-                    serie_reference,
-                    debut_pos,
-                    fin_pos
-                )
-
-                if predictions is None:
-                    predictions = [
-                        np.nan
-                    ] * longueur
-
-            elif methode == "hybride":
-
-                predictions = prediction_hybride(
-                    serie_reference,
-                    debut_pos,
-                    fin_pos
-                )
-
-            elif methode == "journaliere":
-
-                predictions = prediction_journaliere(
-                    serie_reference,
-                    debut_pos,
-                    fin_pos
-                )
-
-            else:
-
-                predictions = [
-                    np.nan
-                ] * longueur
-
-            # ---------------------------------------------------------
-            # Enregistrement
-            # ---------------------------------------------------------
-
-            for j, pos in enumerate(
-                range(debut_pos, fin_pos + 1)
-            ):
-
-                timestamp = reference.index[pos]
-
-                prediction = predictions[j]
-
-                valeur_avant = np.nan
-                valeur_apres = np.nan
-                valeur_moins_24h = np.nan
-                valeur_plus_24h = np.nan
-
-                # Valeur immédiatement avant
-                if debut_pos > 0:
-                    valeur_avant = (
-                        serie_reference.iloc[
-                            debut_pos - 1
-                        ]
-                    )
-
-                # Valeur immédiatement après
-                if fin_pos < len(
-                    serie_reference
-                ) - 1:
-                    valeur_apres = (
-                        serie_reference.iloc[
-                            fin_pos + 1
-                        ]
-                    )
-
-                # Valeurs +/- 24 h
-                t_moins_24 = (
-                    timestamp
-                    - pd.Timedelta(hours=24)
-                )
-
-                t_plus_24 = (
-                    timestamp
-                    + pd.Timedelta(hours=24)
-                )
-
-                if t_moins_24 in serie_reference.index:
-                    valeur_moins_24h = (
-                        serie_reference.loc[
-                            t_moins_24
-                        ]
-                    )
-
-                if t_plus_24 in serie_reference.index:
-                    valeur_plus_24h = (
-                        serie_reference.loc[
-                            t_plus_24
-                        ]
-                    )
-
-                # On ne modifie que les NaN.
-                if pd.notna(prediction):
-
-                    resultat.iat[
-                        pos,
-                        resultat.columns.get_loc(
-                            station
-                        )
-                    ] = prediction
+                if not np.isnan(prediction):
+                    resultat.iat[pos, resultat.columns.get_loc(station)] = prediction
 
                 journal.append(
                     {
-                        "timestamp": timestamp,
+                        "timestamp": reference.index[pos],
                         "station": station,
-                        "longueur_sequence":
-                            longueur,
-                        "duree_heures":
-                            longueur * 3,
-                        "position_dans_sequence":
-                            j + 1,
-                        "methode": methode,
-                        "temperature_imputee":
-                            prediction,
-                        "valeur_avant":
-                            valeur_avant,
-                        "valeur_apres":
-                            valeur_apres,
-                        "valeur_moins_24h":
-                            valeur_moins_24h,
-                        "valeur_plus_24h":
-                            valeur_plus_24h,
-                        "imputation_reussie":
-                            pd.notna(prediction),
+                        "longueur_sequence": longueur,
+                        "duree_heures": longueur * PAS_HEURES,
+                        "position_dans_sequence": j + 1,
+                        "methode": methode_utilisee or methode_choisie,
+                        "methode_choisie": methode_choisie,
+                        "temperature_imputee": prediction,
+                        "valeur_avant": _valeur(serie, debut_pos - 1),
+                        "valeur_moins_24h": _valeur(serie, pos - DECALAGE_24H),
+                        "imputation_reussie": not np.isnan(prediction),
                     }
                 )
 
-    journal = pd.DataFrame(journal)
-
-    return resultat, journal
+    return resultat, pd.DataFrame(journal)
 
 
 # =============================================================================
@@ -956,18 +755,11 @@ def main():
     # Contrôle attendu
     # -------------------------------------------------------------
 
-    if n_manquantes != 1492:
+    choix = lire_choix_methodes()
 
-        print(
-            "\nATTENTION : le nombre de NaN "
-            "n'est pas égal aux 1492 valeurs "
-            "attendues d'après le diagnostic."
-        )
-
-        print(
-            "Le script continue néanmoins "
-            "avec les données présentes."
-        )
+    print("\nMéthode retenue par longueur de trou (benchmark sur l'apprentissage) :")
+    for longueur, methode in sorted(choix.items()):
+        print(f"  {longueur} point(s) = {longueur * PAS_HEURES} h : {methode}")
 
     # -------------------------------------------------------------
     # Imputation
@@ -979,7 +771,8 @@ def main():
 
     final, journal = (
         imputer_temporellement(
-            original
+            original,
+            choix,
         )
     )
 

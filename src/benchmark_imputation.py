@@ -25,6 +25,10 @@ Important
 La matrice originale n'est jamais utilisée pour entraîner les modèles après
 la création du benchmark. Les températures artificiellement cachées restent
 donc inconnues des méthodes d'imputation.
+
+Le benchmark (choix de la méthode) n'utilise que la période d'apprentissage
+(observations antérieures à la fin de 2022, heure de Paris) : 2023 et le test
+2024-2025 n'interviennent jamais dans le choix.
 """
 
 from itertools import combinations
@@ -32,6 +36,7 @@ from itertools import combinations
 import numpy as np
 import pandas as pd
 
+from src import config, protocole
 from src.meteo import (
     lire_archive_synop,
     stations_stables_metropolitaines,
@@ -42,20 +47,16 @@ from src.meteo import (
 # CONFIGURATION
 # =============================================================================
 
-ANNEE_DEBUT = 2015
-ANNEE_FIN = 2025
+ANNEE_DEBUT = config.DATA_DEBUT.year
+ANNEE_FIN = config.DATA_FIN.year
 
-DEBUT = pd.Timestamp(
-    "2015-12-01 00:00:00",
-    tz="UTC",
-)
+# Grille SYNOP de 3 h, en UTC : du premier jour de la période à 0 h UTC
+# jusqu'à la dernière observation (21 h UTC) du dernier jour.
+DEBUT = pd.Timestamp(config.DATA_DEBUT, tz="UTC")
 
-FIN = pd.Timestamp(
-    "2025-12-31 21:00:00",
-    tz="UTC",
-)
+FIN = pd.Timestamp(config.DATA_FIN, tz="UTC") + pd.Timedelta(hours=21)
 
-GRAINE = 42
+GRAINE = config.SEED
 TAUX_MASQUAGE = 0.05
 
 NB_VOISINS = 3
@@ -1126,12 +1127,15 @@ def main():
         nb_manquantes,
     )
 
-    assert matrice.shape == (
-        29472,
-        40,
-    )
+    assert matrice.shape[1] == 40
 
-    assert nb_manquantes == 11285
+    # Le choix de la méthode se fait uniquement sur la période d'apprentissage.
+    matrice = protocole.periode_apprentissage(matrice)
+
+    print(
+        "Période utilisée pour le benchmark :",
+        matrice.index.min(), "->", matrice.index.max(),
+    )
 
     # =========================================================================
     # BENCHMARK
@@ -1153,7 +1157,7 @@ def main():
         len(verite),
     )
 
-    assert len(verite) == 58379
+    assert len(verite) == int(TAUX_MASQUAGE * matrice.notna().sum().sum())
 
     # =========================================================================
     # CORRELATIONS
