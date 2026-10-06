@@ -19,6 +19,7 @@ Protocole
 - un modèle distinct pour chacune des 24 heures ;
 - apprentissage strictement antérieur au bloc prédit ;
 - validation expanding sur les quatre trimestres de 2023 ;
+- test final 2024-2025 par blocs mensuels expanding ;
 - exclusion des cibles COVID via apprentissage_avant() ;
 - aucune variable de météo parfaite ;
 - random_state fixé pour la reproductibilité.
@@ -67,14 +68,11 @@ from src import modeles_meteo as m2
 # ===========================================================================
 
 CANDIDAT_TEMPERATURE_M3 = "temp_38_ponderee"
-
 VARIANTE_METEO_M3 = "M2-F"
 
 RANDOM_STATE_M3 = 42
 
-
 # Configuration M3-1 sélectionnée exclusivement sur la validation 2023.
-
 LEARNING_RATE_M3 = 0.05
 MAX_ITER_M3 = 300
 MAX_LEAF_NODES_M3 = 15
@@ -82,7 +80,7 @@ L2_REGULARIZATION_M3 = 1.0
 
 
 # ===========================================================================
-# Résultat de validation
+# Structures de résultats
 # ===========================================================================
 
 @dataclass
@@ -94,6 +92,20 @@ class ResultatValidationM3:
     predictions: pd.DataFrame
     metriques: dict[str, float]
     metriques_par_bloc: pd.DataFrame
+    parametres: dict[str, object]
+
+
+@dataclass
+class ResultatTestFinalM3:
+    """
+    Résultat de l'évaluation finale M3 sur 2024-2025.
+    """
+
+    configuration: str
+    candidat_temperature: str
+    variante_meteo: str
+    predictions: pd.DataFrame
+    metriques: dict[str, float]
     parametres: dict[str, object]
 
 
@@ -265,9 +277,6 @@ def construire_modele_m3(
 ) -> Pipeline:
     """
     Construit le pipeline M3 pour une heure cible.
-
-    Les variables catégorielles jour_semaine et mois sont encodées.
-    Les variables numériques sont transmises au HGBR sans transformation.
     """
 
     verifier_configuration_m3()
@@ -284,10 +293,8 @@ def construire_modele_m3(
             "heure doit être comprise entre 0 et 23."
         )
 
-    variables_numeriques = (
-        variables_numeriques_m3(
-            heure
-        )
+    variables_numeriques = variables_numeriques_m3(
+        heure
     )
 
     variables_categorielles = list(
@@ -626,14 +633,6 @@ def valider_m3_expanding(
 ) -> ResultatValidationM3:
     """
     Valide M3 sur les quatre blocs expanding de 2023.
-
-    Pour chaque trimestre :
-    - apprentissage strictement antérieur au bloc ;
-    - exclusion des cibles COVID via apprentissage_avant() ;
-    - réajustement des 24 modèles au début du bloc ;
-    - prédiction du bloc sans réajustement interne.
-
-    Les périodes de test 2024-2025 sont interdites ici.
     """
 
     verifier_donnees_m3(
@@ -678,12 +677,10 @@ def valider_m3_expanding(
             fin_bloc
         )
 
-        apprentissage = (
-            m1.apprentissage_avant(
-                donnees=donnees,
-                debut_bloc=debut_bloc,
-                periodes_autorisees=periodes_validation,
-            )
+        apprentissage = m1.apprentissage_avant(
+            donnees=donnees,
+            debut_bloc=debut_bloc,
+            periodes_autorisees=periodes_validation,
         )
 
         if apprentissage.empty:
@@ -780,8 +777,6 @@ def valider_m3_expanding(
         .reset_index(drop=True)
     )
 
-    # 365 jours en 2023 moins les deux journées DST :
-    # 363 * 24 = 8712 observations.
     if len(
         predictions
     ) != 8712:
@@ -819,10 +814,8 @@ def valider_m3_expanding(
             "hors de l'année 2023."
         )
 
-    metriques = (
-        m1.calculer_metriques_finales(
-            predictions
-        )
+    metriques = m1.calculer_metriques_finales(
+        predictions
     )
 
     metriques_blocs = (
@@ -861,6 +854,259 @@ def valider_m3_expanding(
         predictions=predictions,
         metriques=metriques,
         metriques_par_bloc=metriques_blocs,
+        parametres=parametres,
+    )
+
+
+# ===========================================================================
+# Test final 2024-2025
+# ===========================================================================
+
+def evaluer_m3_test_final(
+    donnees: pd.DataFrame,
+) -> ResultatTestFinalM3:
+    """
+    Évalue la configuration M3-1 gelée sur le test final 2024-2025.
+
+    IMPORTANT
+    ---------
+    Cette fonction ne doit être exécutée qu'après gel définitif de M3
+    sur la validation 2023.
+
+    Le protocole est strictement identique à celui du test final M2 :
+
+    - ré-estimation des 24 modèles au début de chaque mois ;
+    - apprentissage 2016-2022 ;
+    - validation 2023 ;
+    - mois de test strictement antérieurs au mois prédit ;
+    - aucune observation du mois courant ou du futur dans
+      l'apprentissage.
+
+    Aucun hyperparamètre n'est accepté par cette fonction afin d'éviter
+    toute modification de M3 lors du test final.
+    """
+
+    verifier_configuration_m3()
+
+    verifier_donnees_m3(
+        donnees
+    )
+
+    donnees = donnees.copy()
+
+    donnees[
+        "jour_cible"
+    ] = pd.to_datetime(
+        donnees[
+            "jour_cible"
+        ]
+    )
+
+    jours = (
+        donnees[
+            "jour_cible"
+        ]
+        .dt
+        .normalize()
+    )
+
+    morceaux = []
+
+    for (
+        nom_bloc,
+        debut,
+        fin,
+    ) in m1.BLOCS_TEST_FINAL_2024_2025:
+
+        debut = pd.Timestamp(
+            debut
+        )
+
+        fin = pd.Timestamp(
+            fin
+        )
+
+        apprentissage = m1.apprentissage_avant(
+            donnees=donnees,
+            debut_bloc=debut,
+            periodes_autorisees=(
+                m1.PERIODES_AUTORISEES_TEST_FINAL
+            ),
+        )
+
+        if apprentissage.empty:
+            raise ValueError(
+                f"Apprentissage vide pour le bloc "
+                f"{nom_bloc}."
+            )
+
+        if (
+            pd.to_datetime(
+                apprentissage[
+                    "jour_cible"
+                ]
+            ).max()
+            >= debut
+        ):
+            raise RuntimeError(
+                f"Fuite temporelle détectée "
+                f"pour le bloc de test {nom_bloc}."
+            )
+
+        masque_test = (
+            (
+                donnees[
+                    "periode"
+                ]
+                == "test"
+            )
+            & (
+                jours >= debut
+            )
+            & (
+                jours < fin
+            )
+        )
+
+        test_bloc = (
+            donnees.loc[
+                masque_test
+            ]
+            .copy()
+        )
+
+        if test_bloc.empty:
+            raise ValueError(
+                f"Bloc de test {nom_bloc} vide."
+            )
+
+        test_bloc[
+            "bloc_test"
+        ] = nom_bloc
+
+        modeles = ajuster_modeles_m3(
+            apprentissage=apprentissage,
+        )
+
+        predictions = predire_m3(
+            modeles=modeles,
+            donnees=test_bloc,
+        )
+
+        morceaux.append(
+            predictions
+        )
+
+    if not morceaux:
+        raise ValueError(
+            "Aucune prédiction M3 de test final produite."
+        )
+
+    predictions = (
+        pd.concat(
+            morceaux,
+            ignore_index=True,
+        )
+        .sort_values(
+            [
+                "jour_cible",
+                "heure_cible",
+            ]
+        )
+        .reset_index(
+            drop=True
+        )
+    )
+
+    # 2024 : 366 jours - 2 jours DST = 364 jours
+    # 2025 : 365 jours - 2 jours DST = 363 jours
+    # Total : 727 * 24 = 17 448 observations.
+    if len(
+        predictions
+    ) != 17448:
+        raise RuntimeError(
+            "Le test final M3 2024-2025 devrait contenir "
+            f"17448 prédictions, contre "
+            f"{len(predictions)} obtenues."
+        )
+
+    if predictions[
+        "prediction_MW"
+    ].isna().any():
+        raise RuntimeError(
+            "Des prédictions M3 de test final sont manquantes."
+        )
+
+    if predictions.duplicated(
+        [
+            "jour_cible",
+            "heure_cible",
+        ]
+    ).any():
+        raise RuntimeError(
+            "Doublons dans les prédictions finales M3."
+        )
+
+    if not predictions[
+        "jour_cible"
+    ].dt.year.isin(
+        [
+            2024,
+            2025,
+        ]
+    ).all():
+        raise RuntimeError(
+            "Le test final M3 contient des observations "
+            "hors de 2024-2025."
+        )
+
+    metriques = m1.calculer_metriques(
+        predictions
+    )
+
+    metriques.update(
+        m1.calculer_metriques_journalieres(
+            predictions
+        )
+    )
+
+    parametres = {
+        "configuration": "M3-1",
+        "candidat_temperature": (
+            CANDIDAT_TEMPERATURE_M3
+        ),
+        "variante_meteo": (
+            VARIANTE_METEO_M3
+        ),
+        "learning_rate": (
+            LEARNING_RATE_M3
+        ),
+        "max_iter": (
+            MAX_ITER_M3
+        ),
+        "max_leaf_nodes": (
+            MAX_LEAF_NODES_M3
+        ),
+        "l2_regularization": (
+            L2_REGULARIZATION_M3
+        ),
+        "random_state": (
+            RANDOM_STATE_M3
+        ),
+        "early_stopping": False,
+        "selection": "validation_2023",
+    }
+
+    return ResultatTestFinalM3(
+        configuration="M3-1",
+        candidat_temperature=(
+            CANDIDAT_TEMPERATURE_M3
+        ),
+        variante_meteo=(
+            VARIANTE_METEO_M3
+        ),
+        predictions=predictions,
+        metriques=metriques,
         parametres=parametres,
     )
 
