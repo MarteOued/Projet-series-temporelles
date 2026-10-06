@@ -1,0 +1,7 @@
+variante,variables,n_predictions,MAE_MW,RMSE_MW,MAE_total_journalier_MWh,MAE_pointe_MW,MAE_heure_pointe_h,nb_jours_complets
+CAL-D,ferie + veille_ferie + lendemain_ferie + pont_potentiel + vacances_A + vacances_B + vacances_C,8712,1547.9518911042333,2151.110441963402,32776.414731747675,1711.6654934759038,1.465564738292011,363
+CAL-E,ferie + veille_ferie + lendemain_ferie + pont_potentiel + vacances_A + vacances_B + vacances_C + periode_noel,8712,1548.866418091546,2151.9264212145677,32792.74464673419,1714.6891044164959,1.5041322314049588,363
+CAL-B,ferie + veille_ferie + lendemain_ferie + pont_potentiel,8712,1549.4979305545476,2159.977366100098,32868.83344531987,1712.8563619555903,1.4683195592286502,363
+CAL-C,ferie + veille_ferie + lendemain_ferie + pont_potentiel + nb_zones_vacances,8712,1554.9561081201114,2161.5732250669876,33023.48899013938,1717.923700485203,1.4683195592286502,363
+CAL-F,ferie + veille_ferie + lendemain_ferie + pont_potentiel + nb_zones_vacances + periode_noel,8712,1555.8914078460937,2162.456296367906,33042.26471111635,1720.8740493864766,1.5068870523415978,363
+CAL-A,ferie,8712,1601.1781359060653,2212.443727123294,34110.77887198704,1740.4438644943482,1.4986225895316805,363
