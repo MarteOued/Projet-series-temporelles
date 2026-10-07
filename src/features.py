@@ -1601,3 +1601,98 @@ def construire_dataset(
         )
         .reset_index(drop=True)
     )
+
+# ===========================================================================
+# Fichiers d'entrée et de sortie
+# ===========================================================================
+
+FICHIER_CONSOMMATION = (
+    config.DATA_PREPAREES / "rte" / "conso_horaire_utc.csv"
+)
+
+FICHIER_TEMPERATURES = (
+    config.DATA_PREPAREES
+    / "meteo"
+    / "temperatures_france_candidates_horaire_utc.csv"
+)
+
+FICHIER_CALENDRIER = (
+    config.DATA_PREPAREES / "calendrier" / "calendrier.csv"
+)
+
+FICHIER_DATASET = (
+    config.DATA_PREPAREES / "dataset_modelisation_2016_2025.csv"
+)
+
+
+def charger_entrees() -> tuple[pd.Series, pd.DataFrame, pd.DataFrame]:
+    """Relit les trois fichiers préparés (consommation, météo, calendrier).
+
+    Seules les températures opérationnelles sont gardées : les colonnes
+    « météo parfaite » ne doivent jamais entrer dans le dataset.
+    """
+    for fichier, commande in (
+        (FICHIER_CONSOMMATION, "python -m src.rte"),
+        (FICHIER_TEMPERATURES, "python -m src.pipeline_meteo"),
+        (FICHIER_CALENDRIER, "python -m src.calendrier"),
+    ):
+        if not fichier.exists():
+            raise FileNotFoundError(
+                f"{fichier} introuvable : lancer d'abord `{commande}`."
+            )
+
+    consommation = pd.read_csv(
+        FICHIER_CONSOMMATION,
+        index_col="date_heure_utc",
+        parse_dates=["date_heure_utc"],
+    )["consommation_MW"]
+
+    meteo = pd.read_csv(
+        FICHIER_TEMPERATURES,
+        index_col="date_heure_utc",
+        parse_dates=["date_heure_utc"],
+    )[COLONNES_TEMPERATURE_OPERATIONNELLE]
+
+    calendrier = pd.read_csv(
+        FICHIER_CALENDRIER,
+        index_col="date",
+        parse_dates=["date"],
+    )
+
+    return consommation, meteo, calendrier
+
+
+def preparer(
+    chemin=FICHIER_DATASET,
+) -> pd.DataFrame:
+    """Construit le dataset de modélisation 2016-2025 et le sauvegarde."""
+    consommation, meteo, calendrier = charger_entrees()
+
+    dataset = construire_dataset(
+        consommation=consommation,
+        meteo=meteo,
+        calendrier=calendrier,
+        debut_cible=config.DECOUPAGE["apprentissage"][0],
+        fin_cible=config.DECOUPAGE["test"][1],
+    )
+
+    chemin.parent.mkdir(parents=True, exist_ok=True)
+    dataset.to_csv(chemin, index=False)
+
+    return dataset
+
+
+def main() -> None:
+    dataset = preparer()
+
+    print(f"Dataset : {FICHIER_DATASET}")
+    print(f"Dimensions : {dataset.shape}")
+    print(
+        "Jours cibles : "
+        f"{dataset['jour_cible'].min()} -> {dataset['jour_cible'].max()}"
+    )
+    print(dataset["periode"].value_counts().to_string())
+
+
+if __name__ == "__main__":
+    main()
