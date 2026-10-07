@@ -107,7 +107,7 @@ pytest
 | 8 | Test final 2024-2025 | `python -m src.experiences --test-final` | `data/resultats/` : prévisions et scores des configurations **gelées** (reproduction, aucun choix n'en dépend) | **coûteux** : environ 30 min au total, réestimation mensuelle | disponible |
 | 9 | Analyses | `python -m src.analyses` (2023) ; `--test-final` (+ 2024-2025) | `data/resultats/` : plafond « météo parfaite », décision 14 (un modèle contre 24), erreurs par saison, type de jour, température, heure et mois, 3 pires jours de M2 | quelques minutes | disponible |
 | 10 | Comparaison sur les mêmes jours | `python -m src.comparaison` (2023) ; `--test-final` (+ 2024-2025) | `data/resultats/comparaison_*.csv` : B0, B1, B2, M1 à M4 et le plafond notés sur les jours où toutes les méthodes ont leurs 24 heures | rapide | disponible |
-| 11 | Test bonus 2026 | `python -m src.test_bonus` | `data/resultats/test_bonus_2026_*.csv` et prévisions : janvier à juin 2026, configurations gelées, réestimation mensuelle, toutes les méthodes sur les mêmes jours. **Une seule fois** (décision 3) | environ 15 min | fait le 2026-10-07 |
+| 11 | Test bonus 2026 | `python -m src.test_bonus` | `data/resultats/test_bonus_2026_*.csv` et prévisions : janvier à juin 2026, configurations gelées, réestimation mensuelle, toutes les méthodes sur les mêmes jours. **Une seule fois** (décision 3). Les données de 2026 sont préparées à part, dans des sous-dossiers `test_bonus` : le projet reste sur 2015-2025 | environ 15 min | fait le 2026-10-07 |
 | 12 | Fichiers du tableau de bord | `python -m src.visualisation` | `data/resultats/visualisation_previsions.csv` (toutes les prévisions, mêmes jours) et `visualisation_jours.csv` (un résumé par jour sur 10 ans) | rapide | disponible |
 
 ## Tableau de bord

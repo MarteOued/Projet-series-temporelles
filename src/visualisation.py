@@ -51,9 +51,12 @@ PERIODES = {
 # 1. Toutes les prévisions, mêmes jours
 # ===========================================================================
 
-def previsions_bonus(conso_h):
-    """Vraies valeurs et prévisions (jour x heure) du test bonus 2026."""
-    reel, previsions = test_bonus.benchmarks_bonus(conso_h)
+def previsions_bonus():
+    """Vraies valeurs et prévisions (jour x heure) du test bonus 2026.
+
+    La consommation de 2026 n'existe que dans les dossiers du test bonus.
+    """
+    reel, previsions = test_bonus.benchmarks_bonus(rte.lire_prepare(test_bonus.FICHIER_CONSO_BONUS))
     noms = {code: nom for nom, code in comparaison.MODELES.items()}
     for code in comparaison.MODELES.values():
         fichier = DOSSIER_RESULTATS / f"predictions_test_bonus_{code}_2026.csv"
@@ -83,7 +86,7 @@ def toutes_les_previsions(conso_h=None):
     for nom_periode in ("validation", "test"):
         _, reel, previsions = comparaison.comparer_periode(nom_periode, test_final=True, conso_h=conso_h)
         morceaux.append(en_lignes(nom_periode, reel, previsions))
-    morceaux.append(en_lignes("test_bonus", *previsions_bonus(conso_h)))
+    morceaux.append(en_lignes("test_bonus", *previsions_bonus()))
     return pd.concat(morceaux, ignore_index=True)
 
 
@@ -91,8 +94,10 @@ def toutes_les_previsions(conso_h=None):
 # 2. Un résumé par jour sur dix ans
 # ===========================================================================
 
-def resume_des_jours(conso_h=None):
-    conso_h = rte.lire_prepare() if conso_h is None else conso_h
+def resume_des_jours():
+    """Les fichiers du test bonus couvrent 2016 à mi-2026 ; jusqu'en 2025, ils sont
+    identiques à ceux du projet (vérifié, docs/decisions.md)."""
+    conso_h = rte.lire_prepare(test_bonus.FICHIER_CONSO_BONUS)
     debut, fin = config.DECOUPAGE["apprentissage"][0], config.TEST_BONUS[1]
     jours = pd.date_range(debut, fin, freq="D")
 
@@ -100,7 +105,7 @@ def resume_des_jours(conso_h=None):
     jour_paris = conso.index.tz_convert(config.FUSEAU).tz_localize(None).normalize()
     par_jour = conso.groupby(jour_paris).agg(["mean", "max"]).reindex(jours)
 
-    description = analyses.description_des_jours(jours)
+    description = analyses.description_des_jours(jours, config.DATA_PREPAREES_BONUS)
     resume = pd.DataFrame({
         "jour": jours.strftime("%Y-%m-%d"),
         "conso_moyenne_MW": par_jour["mean"].to_numpy(),
@@ -143,7 +148,7 @@ def main():
     previsions = toutes_les_previsions(conso_h)
     previsions.to_csv(FICHIER_PREVISIONS, index=False, float_format="%.1f")
     print(f"  -> {FICHIER_PREVISIONS.relative_to(config.RACINE)} ({len(previsions)} lignes)")
-    jours = resume_des_jours(conso_h)
+    jours = resume_des_jours()
     jours.to_csv(FICHIER_JOURS, index=False, float_format="%.2f")
     print(f"  -> {FICHIER_JOURS.relative_to(config.RACINE)} ({len(jours)} lignes)")
     for nom_periode, titre in PERIODES.items():

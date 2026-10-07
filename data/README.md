@@ -26,6 +26,7 @@ Tout se télécharge automatiquement : `python -m src.rte`, `python -m src.pipel
 | `donnees-traitees/meteo/` | étapes de la météo : matrices, journaux, diagnostics, benchmarks |
 | `donnees-preparees/` | fichiers finaux : `rte/`, `meteo/`, `calendrier/`, et `dataset_modelisation_2016_2025.csv` (table des variables à 14 h) |
 | `resultats/` | scores et prévisions des modèles, comparaisons, analyses (versionné) |
+| `*/test_bonus/` | les mêmes étapes, prolongées jusqu'au 30 juin 2026, pour le test bonus seulement (`python -m src.test_bonus`) ; le projet s'arrête au 31 décembre 2025 |
 
 ## Constats de départ sur les fichiers de 2016 (2 octobre 2026)
 

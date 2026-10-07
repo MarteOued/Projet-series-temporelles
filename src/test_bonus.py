@@ -2,7 +2,16 @@
 
 Utilisation
 -----------
-    python -m src.test_bonus
+    python -m src.test_bonus              # prépare les données 2026 si besoin, puis évalue
+    python -m src.test_bonus --preparer   # force la préparation des données 2026
+
+Où sont les données de 2026 ?
+----------------------------
+Les données du projet s'arrêtent au 31 décembre 2025 (décision 1). Pour le test
+bonus seulement, les mêmes scripts (src.rte, src.calendrier, src.pipeline_meteo)
+sont relancés en mode test bonus (variable PROJET_TEST_BONUS=1, voir config.py) :
+ils traitent les données jusqu'au 30 juin 2026 et écrivent dans des sous-dossiers
+« test_bonus ». Les fichiers du projet ne sont jamais modifiés.
 
 Règles
 ------
@@ -20,6 +29,11 @@ printemps), données 2026 consolidées que RTE peut encore corriger.
 
 from __future__ import annotations
 
+import argparse
+import os
+import subprocess
+import sys
+
 import pandas as pd
 
 from src import analyses, benchmarks, comparaison, config, evaluation, features, rte
@@ -29,7 +43,11 @@ from src import modeles_hgbr as m3
 from src import modeles_lineaires as m1
 from src import modeles_meteo as m2
 
-FICHIER_DATASET_BONUS = config.DATA_PREPAREES / "dataset_test_bonus_2026.csv"
+FICHIER_DATASET_BONUS = config.DATA_PREPAREES_BONUS / "dataset_test_bonus_2026.csv"
+# La table 2016-2025 est celle du projet, même quand ce module tourne en mode test bonus
+FICHIER_DATASET_PROJET = config.DATA_PREPAREES_PROJET / features.FICHIER_DATASET.name
+FICHIER_CONSO_BONUS = config.DATA_PREPAREES_BONUS / "rte" / "conso_horaire_utc.csv"
+ETAPES_PREPARATION = ("src.rte", "src.calendrier", "src.pipeline_meteo")
 DOSSIER_RESULTATS = comparaison.DOSSIER_RESULTATS
 
 PERIODES_AUTORISEES = {"apprentissage", "validation", "test", "test_bonus"}
@@ -127,12 +145,32 @@ def _sauver(tableau, nom):
     print(f"  -> {chemin.relative_to(config.RACINE)}")
 
 
-def main():
-    print("Test bonus 2026 : configurations gelées, une seule fois")
+def lancer_en_mode_bonus(module):
+    """Lance un module dans un autre processus, en mode test bonus."""
+    environnement = {**os.environ, "PROJET_TEST_BONUS": "1"}
+    subprocess.run([sys.executable, "-m", module], env=environnement, check=True, cwd=config.RACINE)
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--preparer", action="store_true", help="refaire les données 2026 même si elles existent")
+    args = parser.parse_args(argv)
+
+    if not config.MODE_TEST_BONUS:
+        if not FICHIER_DATASET_PROJET.exists():
+            raise FileNotFoundError(f"{FICHIER_DATASET_PROJET} introuvable : lancer d'abord `python -m src.features`.")
+        if args.preparer or not FICHIER_CONSO_BONUS.exists():
+            print("Préparation des données jusqu'au 30 juin 2026 (dossiers test_bonus), environ 5 min")
+            for module in ETAPES_PREPARATION:
+                lancer_en_mode_bonus(module)
+        lancer_en_mode_bonus("src.test_bonus")
+        return
+
+    print("Test bonus 2026 : configurations gelées")
     construire_dataset_bonus()
     # Les deux tables sont relues depuis leur fichier : mêmes types de colonnes
     donnees = pd.concat(
-        [pd.read_csv(features.FICHIER_DATASET), pd.read_csv(FICHIER_DATASET_BONUS)],
+        [pd.read_csv(FICHIER_DATASET_PROJET), pd.read_csv(FICHIER_DATASET_BONUS)],
         ignore_index=True,
     )
     donnees_plafond = analyses.ajouter_meteo_parfaite(donnees)

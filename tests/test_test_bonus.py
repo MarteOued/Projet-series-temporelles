@@ -48,4 +48,30 @@ def test_chaque_mois_n_apprend_que_le_passe():
 
 def test_la_liste_des_stations_reste_figee_sur_2015_2025():
     assert config.ANNEES_SELECTION_STATIONS == (2015, 2025)
-    assert config.DATA_FIN >= config.TEST_BONUS[1]
+
+
+def test_le_projet_s_arrete_fin_2025():
+    # Décision 1 : hors du test bonus, les données s'arrêtent au 31 décembre 2025
+    assert not config.MODE_TEST_BONUS
+    assert config.DATA_FIN == config.DATA_FIN_PROJET == config.DECOUPAGE["test"][1]
+    assert config.DATA_PREPAREES == config.DATA_PREPAREES_PROJET
+
+
+def test_le_mode_bonus_ecrit_ailleurs_que_le_projet():
+    # Le mode test bonus se lit au démarrage : je le regarde dans un autre processus
+    import json
+    import os
+    import subprocess
+    import sys
+
+    code = ("import json; from src import config; print(json.dumps({'fin': str(config.DATA_FIN), "
+            "'preparees': str(config.DATA_PREPAREES), 'interim': str(config.DATA_INTERIM), "
+            "'traitees': str(config.DATA_TRAITEES)}))")
+    sortie = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True,
+                            cwd=config.RACINE, env={**os.environ, "PROJET_TEST_BONUS": "1"}).stdout
+    bonus = json.loads(sortie)
+    assert bonus["fin"] == str(config.TEST_BONUS[1])
+    assert bonus["preparees"] == str(config.DATA_PREPAREES_BONUS)
+    for cle, projet in (("preparees", config.DATA_PREPAREES), ("interim", config.DATA_INTERIM),
+                        ("traitees", config.DATA_TRAITEES)):
+        assert bonus[cle] != str(projet) and bonus[cle].endswith("test_bonus")
