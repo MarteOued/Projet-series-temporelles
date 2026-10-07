@@ -247,11 +247,18 @@ SAISONS = {12: "hiver", 1: "hiver", 2: "hiver", 3: "printemps", 4: "printemps", 
            6: "été", 7: "été", 8: "été", 9: "automne", 10: "automne", 11: "automne"}
 
 
-def description_des_jours(jours):
-    """Saison, type de jour et température réelle moyenne de chaque jour cible."""
-    calendrier = pd.read_csv(features.FICHIER_CALENDRIER, index_col="date", parse_dates=["date"])
+def description_des_jours(jours, dossier=None):
+    """Saison, type de jour et température réelle moyenne de chaque jour cible.
+
+    dossier : dossier des fichiers préparés (par défaut celui du mode en cours ;
+    config.DATA_PREPAREES_BONUS pour lire aussi le premier semestre 2026).
+    """
+    dossier = config.DATA_PREPAREES if dossier is None else dossier
+    calendrier = pd.read_csv(dossier / features.FICHIER_CALENDRIER.relative_to(config.DATA_PREPAREES),
+                             index_col="date", parse_dates=["date"])
     calendrier = calendrier.reindex(jours)
-    meteo = pd.read_csv(features.FICHIER_TEMPERATURES, index_col="date_heure_utc",
+    meteo = pd.read_csv(dossier / features.FICHIER_TEMPERATURES.relative_to(config.DATA_PREPAREES),
+                        index_col="date_heure_utc",
                         parse_dates=["date_heure_utc"])[f"{CANDIDAT_M2}_meteo_parfaite"]
     temperature = meteo.groupby(meteo.index.tz_convert(config.FUSEAU).tz_localize(None).normalize()).mean()
 
