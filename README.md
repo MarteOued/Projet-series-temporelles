@@ -69,6 +69,7 @@ src/
   modeles_arma.py      M4 : M1 + correction ARMA de ses erreurs ; evaluation_finale_m4.py
   experiences.py       refait tous les fichiers de data/resultats
   comparaison.py       benchmarks et modèles notés sur les mêmes jours
+  analyses.py          plafond météo parfaite, décision 14, erreurs par groupe, pires jours
   evaluation.py        MAE, RMSE, MAPE, biais, total du jour, pointe, heure de pointe
 tests/                 tests automatiques, dont le test de non-fuite
 docs/                  décisions, protocole, disponibilité des variables, journal de l'IA
@@ -101,7 +102,8 @@ pytest
 | 6 | Benchmarks | `python -m src.benchmarks` | scores B0, B1 et B2 (apprentissage, validation) ; explications : `notebooks/03_benchmarks.ipynb` | rapide (quelques secondes) | disponible |
 | 7 | Choix sur la validation 2023 | `python -m src.experiences` | `data/resultats/` : ablations de M1 (retards, calendrier), course des températures et variantes de M2, grilles de M3 et M4 | **coûteux** : environ 15 min | disponible |
 | 8 | Test final 2024-2025 | `python -m src.experiences --test-final` | `data/resultats/` : prévisions et scores des configurations **gelées** (reproduction, aucun choix n'en dépend) | **coûteux** : environ 30 min au total, réestimation mensuelle | disponible |
-| 9 | Comparaison sur les mêmes jours | `python -m src.comparaison` (2023) ; `--test-final` (+ 2024-2025) | `data/resultats/comparaison_*.csv` : B0, B1, B2 et M1 à M4 notés sur les jours où toutes les méthodes ont leurs 24 heures | rapide | disponible |
+| 9 | Analyses | `python -m src.analyses` (2023) ; `--test-final` (+ 2024-2025) | `data/resultats/` : plafond « météo parfaite », décision 14 (un modèle contre 24), erreurs par saison, type de jour, température, heure et mois, 3 pires jours de M2 | quelques minutes | disponible |
+| 10 | Comparaison sur les mêmes jours | `python -m src.comparaison` (2023) ; `--test-final` (+ 2024-2025) | `data/resultats/comparaison_*.csv` : B0, B1, B2, M1 à M4 et le plafond notés sur les jours où toutes les méthodes ont leurs 24 heures | rapide | disponible |
 
 ## Notebooks
 
