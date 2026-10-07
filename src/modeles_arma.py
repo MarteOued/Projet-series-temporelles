@@ -18,11 +18,15 @@ Disponibilité à l'origine de prévision
 --------------------------------------
 La prévision de la journée D est produite à 14 h le jour D-1.
 
-Pour une heure cible h <= 13 :
+À 14 h, la dernière consommation connue est la tranche 12 h-13 h
+(config.DERNIERE_HEURE_CONSO_CONNUE = 12) : la tranche 13 h-14 h se termine
+à 14 h pile et n'est pas encore publiée.
+
+Pour une heure cible h <= 12 :
     le résidu de D-1 à l'heure h est disponible.
     La correction de D est une prévision ARMA à horizon 1.
 
-Pour une heure cible h >= 14 :
+Pour une heure cible h >= 13 :
     le résidu de D-1 à l'heure h n'est pas encore disponible.
     Le dernier résidu disponible est celui de D-2.
     La correction de D est une prévision ARMA à horizon 2.
@@ -66,6 +70,7 @@ import pandas as pd
 
 from statsmodels.tsa.arima.model import ARIMA
 
+from src import config
 from src import modeles_lineaires as m1
 
 
@@ -82,7 +87,10 @@ COLONNE_RESIDU_M1 = "residu_M1_MW"
 COLONNE_CORRECTION_ARMA = "correction_ARMA_MW"
 COLONNE_PREDICTION_M4 = "prediction_MW"
 
-HEURE_ORIGINE = 14
+# Dernière heure cible dont le résidu de la veille est connu à 14 h.
+# (Avant correction : 13, ce qui utilisait la tranche 13 h-14 h du jour J,
+# publiée seulement à 14 h : petite fuite d'information.)
+DERNIERE_HEURE_RESIDU_VEILLE = config.DERNIERE_HEURE_CONSO_CONNUE
 
 MIN_OBSERVATIONS_ARMA = 30
 
@@ -329,15 +337,15 @@ def dernier_jour_disponible(
 
     Cible D, origine D-1 à 14 h :
 
-    H <= 13 : D-1 disponible.
-    H >= 14 : D-2 disponible.
+    H <= 12 : D-1 disponible.
+    H >= 13 : D-2 disponible (la tranche 13 h-14 h de D-1 n'est pas publiée à 14 h).
     """
 
     jour_cible = pd.Timestamp(
         jour_cible
     ).normalize()
 
-    if heure_cible < HEURE_ORIGINE:
+    if heure_cible <= DERNIERE_HEURE_RESIDU_VEILLE:
         return (
             jour_cible
             - pd.Timedelta(
@@ -365,7 +373,7 @@ def horizon_arma(
             "heure_cible doit être comprise entre 0 et 23."
         )
 
-    if heure_cible < HEURE_ORIGINE:
+    if heure_cible <= DERNIERE_HEURE_RESIDU_VEILLE:
         return 1
 
     return 2
@@ -448,7 +456,7 @@ def predire_heure_m4(
     )
 
     # Important :
-    # pour H >= 14, le dernier jour de l'échantillon M1 peut exister
+    # pour H >= 13, le dernier jour de l'échantillon M1 peut exister
     # dans les données mais son résidu n'est pas encore observable
     # à l'origine de la première prévision.
     historique_initial = (
