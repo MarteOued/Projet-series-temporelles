@@ -392,6 +392,7 @@ def apprentissage_avant(
         "apprentissage",
         "validation",
         "test",
+        "test_bonus",
     }
 
     if not periodes_autorisees:

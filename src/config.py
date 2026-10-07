@@ -72,7 +72,16 @@ HORIZON_MAX = 33
 # Décembre 2015 sert de marge historique pour construire certains
 # retards avant le début de la période d'apprentissage.
 DATA_DEBUT = dt.date(2015, 12, 1)
-DATA_FIN = dt.date(2025, 12, 31)
+# Jusqu'au 2026-10-07 : 31 décembre 2025. Prolongé au 30 juin 2026 pour le test
+# bonus (décision 3), une fois le test final 2024-2025 fait. Les traitements
+# appris (météo, modèles) n'utilisent que 2016-2022 : ajouter 2026 ne change
+# rien à 2016-2025 (vérifié, voir docs/decisions.md).
+DATA_FIN = dt.date(2026, 6, 30)
+
+# Années sur lesquelles la liste des stations SYNOP a été choisie (décision 7) :
+# une station est gardée si elle est présente chaque année de 2015 à 2025. La
+# liste est figée : les données de 2026 ne la modifient pas.
+ANNEES_SELECTION_STATIONS = (2015, 2025)
 
 # Découpage défini sur les jours cibles J+1.
 #
@@ -100,8 +109,8 @@ DECOUPAGE = {
 
 # Test bonus (décision 3) : janvier à juin 2026, données consolidées.
 # Utilisé UNE SEULE FOIS, après le test final 2024-2025, résultats présentés à
-# part. Il ne sert jamais à choisir ou régler quoi que ce soit. Les données de
-# 2026 seront chargées seulement à ce moment-là (DATA_FIN reste fin 2025).
+# part (src/test_bonus.py). Il ne sert jamais à choisir ou régler quoi que ce
+# soit : les configurations des modèles sont celles gelées pour 2024-2025.
 TEST_BONUS = (
     dt.date(2026, 1, 1),
     dt.date(2026, 6, 30),
