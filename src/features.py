@@ -1087,6 +1087,11 @@ def periode_jour_cible(
         if debut <= jour <= fin:
             return nom_periode
 
+    debut, fin = config.TEST_BONUS
+
+    if pd.Timestamp(debut) <= jour <= pd.Timestamp(fin):
+        return "test_bonus"
+
     return "hors_periode"
 
 
@@ -1575,6 +1580,7 @@ def construire_dataset(
         "apprentissage",
         "validation",
         "test",
+        "test_bonus",
         "hors_periode",
     }
 

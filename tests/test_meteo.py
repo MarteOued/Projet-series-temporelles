@@ -146,11 +146,16 @@ def test_stations_stables_presentes_11_ans():
 
     stations = stations_stables()
 
+    # Liste figée sur 2015-2025 (décision 7), même si les données vont plus loin
+    premiere, derniere = _config.ANNEES_SELECTION_STATIONS
+
     nombre_annees_attendu = (
-        ANNEE_FIN
-        - ANNEE_DEBUT
+        derniere
+        - premiere
         + 1
     )
+
+    assert nombre_annees_attendu == 11
 
     assert (
         stations["nb_annees"]

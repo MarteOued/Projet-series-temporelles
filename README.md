@@ -70,6 +70,7 @@ src/
   experiences.py       refait tous les fichiers de data/resultats
   comparaison.py       benchmarks et modèles notés sur les mêmes jours
   analyses.py          plafond météo parfaite, décision 14, erreurs par groupe, pires jours
+  test_bonus.py        test bonus janvier-juin 2026 (une seule fois)
   evaluation.py        MAE, RMSE, MAPE, biais, total du jour, pointe, heure de pointe
 tests/                 tests automatiques, dont le test de non-fuite
 docs/                  décisions, protocole, disponibilité des variables, journal de l'IA
@@ -104,6 +105,7 @@ pytest
 | 8 | Test final 2024-2025 | `python -m src.experiences --test-final` | `data/resultats/` : prévisions et scores des configurations **gelées** (reproduction, aucun choix n'en dépend) | **coûteux** : environ 30 min au total, réestimation mensuelle | disponible |
 | 9 | Analyses | `python -m src.analyses` (2023) ; `--test-final` (+ 2024-2025) | `data/resultats/` : plafond « météo parfaite », décision 14 (un modèle contre 24), erreurs par saison, type de jour, température, heure et mois, 3 pires jours de M2 | quelques minutes | disponible |
 | 10 | Comparaison sur les mêmes jours | `python -m src.comparaison` (2023) ; `--test-final` (+ 2024-2025) | `data/resultats/comparaison_*.csv` : B0, B1, B2, M1 à M4 et le plafond notés sur les jours où toutes les méthodes ont leurs 24 heures | rapide | disponible |
+| 11 | Test bonus 2026 | `python -m src.test_bonus` | `data/resultats/test_bonus_2026_*.csv` et prévisions : janvier à juin 2026, configurations gelées, réestimation mensuelle, toutes les méthodes sur les mêmes jours. **Une seule fois** (décision 3) | environ 15 min | fait le 2026-10-07 |
 
 ## Notebooks
 
@@ -140,7 +142,7 @@ Voir `CONTRIBUTING.md` : une branche par personne et par sujet, pull request rel
 - [x] Choix sur la validation 2023 : température France, ablations, réglages de M3 et M4, décision 14, sensibilité au Covid
 - [x] Test final 2024-2025 (chronologie de son utilisation écrite dans `docs/decisions.md`)
 - [x] Comparaison sur les mêmes jours, plafond « météo parfaite », analyses par groupe, 3 pires jours (notebook 04)
-- [ ] Test bonus 2026 (une seule fois, après le rapport des résultats 2024-2025)
+- [x] Test bonus janvier-juin 2026, lancé une seule fois (`src/test_bonus.py`, notebook 04)
 - [ ] Journal de l'IA : 3 exemples chacun (`docs/journal_ia.md`)
 - [ ] Rapport (moins de 10 pages), oral (10 min)
 
