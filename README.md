@@ -71,6 +71,8 @@ src/
   comparaison.py       benchmarks et modèles notés sur les mêmes jours
   analyses.py          plafond météo parfaite, décision 14, erreurs par groupe, pires jours
   test_bonus.py        test bonus janvier-juin 2026 (une seule fois)
+  visualisation.py     fichiers lus par le tableau de bord
+app/tableau_de_bord.py  tableau de bord Streamlit (visite guidée des résultats)
   evaluation.py        MAE, RMSE, MAPE, biais, total du jour, pointe, heure de pointe
 tests/                 tests automatiques, dont le test de non-fuite
 docs/                  décisions, protocole, disponibilité des variables, journal de l'IA
@@ -106,6 +108,22 @@ pytest
 | 9 | Analyses | `python -m src.analyses` (2023) ; `--test-final` (+ 2024-2025) | `data/resultats/` : plafond « météo parfaite », décision 14 (un modèle contre 24), erreurs par saison, type de jour, température, heure et mois, 3 pires jours de M2 | quelques minutes | disponible |
 | 10 | Comparaison sur les mêmes jours | `python -m src.comparaison` (2023) ; `--test-final` (+ 2024-2025) | `data/resultats/comparaison_*.csv` : B0, B1, B2, M1 à M4 et le plafond notés sur les jours où toutes les méthodes ont leurs 24 heures | rapide | disponible |
 | 11 | Test bonus 2026 | `python -m src.test_bonus` | `data/resultats/test_bonus_2026_*.csv` et prévisions : janvier à juin 2026, configurations gelées, réestimation mensuelle, toutes les méthodes sur les mêmes jours. **Une seule fois** (décision 3) | environ 15 min | fait le 2026-10-07 |
+| 12 | Fichiers du tableau de bord | `python -m src.visualisation` | `data/resultats/visualisation_previsions.csv` (toutes les prévisions, mêmes jours) et `visualisation_jours.csv` (un résumé par jour sur 10 ans) | rapide | disponible |
+
+## Tableau de bord
+
+Une visite guidée des résultats, écrite pour être comprise par tout le monde (pas seulement par des
+spécialistes) : le problème en une image, les données, un jour au choix (réalité contre prévisions),
+le classement des méthodes et ce qui est significatif, les erreurs par saison, type de jour,
+température et heure, les pires journées expliquées, le biais, les choix faits sur 2023, les limites
+et un lexique.
+
+```bash
+streamlit run app/tableau_de_bord.py
+```
+
+Il ne recalcule aucun modèle : il lit `data/resultats/` (versionné), il marche donc dès le clonage du
+dépôt. Les scores sont calculés avec `src/evaluation.py` : ce sont les mêmes que dans le notebook 04.
 
 ## Notebooks
 
