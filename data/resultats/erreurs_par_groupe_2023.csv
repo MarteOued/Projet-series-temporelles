@@ -3,11 +3,18 @@ B0 : veille effective,saison,automne,90,3064.1644675925922,-376.715162037037
 B0 : veille effective,saison,hiver,90,3973.724768518519,-151.2627314814815
 B0 : veille effective,saison,printemps,89,3439.8642322097376,477.92930711610484
 B0 : veille effective,saison,été,92,2786.085824275362,-5.153306159420279
+B0 : veille effective,trimestre,2023-T1,88,4041.781723484848,38.97111742424237
+B0 : veille effective,trimestre,2023-T2,90,3101.1122685185182,62.15254629629625
+B0 : veille effective,trimestre,2023-T3,92,2806.0348731884055,56.717391304347764
+B0 : veille effective,trimestre,2023-T4,91,3329.0740613553116,-216.45707417582415
 B0 : veille effective,type_jour,Noël,7,2885.666666666667,79.35714285714293
 B0 : veille effective,type_jour,férié,11,3339.1003787878794,2912.8882575757575
 B0 : veille effective,type_jour,ouvré,244,2924.9087687841525,-1790.7420167349726
 B0 : veille effective,type_jour,pont,2,2399.3333333333335,-21.541666666666742
 B0 : veille effective,type_jour,week-end,97,4334.759450171821,4112.685137457044
+B0 : veille effective,ferie_selon_jour,férié en semaine,9,2782.0231481481483,2261.097222222222
+B0 : veille effective,ferie_selon_jour,férié le week-end,2,5845.947916666666,5845.947916666666
+B0 : veille effective,ferie_selon_jour,non férié,350,3311.8506845238094,-107.13764880952384
 B0 : veille effective,classe_temperature,10-15 °C,88,3635.214607007576,600.0772964015151
 B0 : veille effective,classe_temperature,15-20 °C,76,2751.309484649123,122.55893640350877
 B0 : veille effective,classe_temperature,5-10 °C,82,3716.0393800813013,-193.59171747967488
@@ -53,11 +60,18 @@ B1 : semaine précédente,saison,automne,90,2271.1015046296293,-1486.32141203703
 B1 : semaine précédente,saison,hiver,90,6334.801157407408,-225.1428240740741
 B1 : semaine précédente,saison,printemps,89,3739.793305243445,1678.518024344569
 B1 : semaine précédente,saison,été,92,1569.8611865942028,-82.57903079710145
+B1 : semaine précédente,trimestre,2023-T1,88,5993.926609848484,28.247632575757553
+B1 : semaine précédente,trimestre,2023-T2,90,2156.5645833333333,576.7594907407406
+B1 : semaine précédente,trimestre,2023-T3,92,1738.4372735507245,44.993885869565204
+B1 : semaine précédente,trimestre,2023-T4,91,4069.3130723443223,-777.7421016483516
 B1 : semaine précédente,type_jour,Noël,7,6600.794642857143,6076.014880952381
 B1 : semaine précédente,type_jour,férié,11,5922.285984848484,5518.160984848484
 B1 : semaine précédente,type_jour,ouvré,244,3382.169825819672,-418.74393784153
 B1 : semaine précédente,type_jour,pont,2,2500.427083333333,2304.53125
 B1 : semaine précédente,type_jour,week-end,97,3197.9285867697595,-184.6223152920962
+B1 : semaine précédente,ferie_selon_jour,férié en semaine,9,6875.666666666667,6807.847222222223
+B1 : semaine précédente,ferie_selon_jour,férié le week-end,2,1632.0729166666665,-285.42708333333326
+B1 : semaine précédente,ferie_selon_jour,non férié,350,3390.4426488095237,-208.40205357142858
 B1 : semaine précédente,classe_temperature,10-15 °C,88,3464.874171401515,1584.1329308712118
 B1 : semaine précédente,classe_temperature,15-20 °C,76,1504.65899122807,852.049342105263
 B1 : semaine précédente,classe_temperature,5-10 °C,82,5312.216209349593,905.0317581300811
@@ -103,11 +117,18 @@ B2 : moyenne de 4 semaines,saison,automne,90,3289.3307870370368,-2834.0555555555
 B2 : moyenne de 4 semaines,saison,hiver,90,7275.954398148148,-710.8813657407406
 B2 : moyenne de 4 semaines,saison,printemps,89,4416.085849719102,3644.013401217229
 B2 : moyenne de 4 semaines,saison,été,92,1725.3680932971015,33.45504981884055
+B2 : moyenne de 4 semaines,trimestre,2023-T1,88,7391.878847064393,1214.382753314394
+B2 : moyenne de 4 semaines,trimestre,2023-T2,90,2523.606423611111,1710.6186921296296
+B2 : moyenne de 4 semaines,trimestre,2023-T3,92,1864.806951992754,-26.951086956521774
+B2 : moyenne de 4 semaines,trimestre,2023-T4,91,4983.175995879121,-2747.1552770146523
 B2 : moyenne de 4 semaines,type_jour,Noël,7,8171.069940476191,8171.069940476191
 B2 : moyenne de 4 semaines,type_jour,férié,11,8000.561079545455,6555.547821969697
 B2 : moyenne de 4 semaines,type_jour,ouvré,244,4062.1099513319673,-419.38757257513663
 B2 : moyenne de 4 semaines,type_jour,pont,2,3965.953125,3965.953125
 B2 : moyenne de 4 semaines,type_jour,week-end,97,3694.33789733677,-273.80535867697597
+B2 : moyenne de 4 semaines,ferie_selon_jour,férié en semaine,9,7148.358217592593,6954.934606481482
+B2 : moyenne de 4 semaines,ferie_selon_jour,férié le week-end,2,11835.473958333334,4758.307291666666
+B2 : moyenne de 4 semaines,ferie_selon_jour,non férié,350,4041.8142857142857,-182.17226190476163
 B2 : moyenne de 4 semaines,classe_temperature,10-15 °C,88,4719.331824100379,2464.8752071496215
 B2 : moyenne de 4 semaines,classe_temperature,15-20 °C,76,1881.5128152412285,1240.5252878289475
 B2 : moyenne de 4 semaines,classe_temperature,5-10 °C,82,5483.874301321138,1188.4946011178863
@@ -153,11 +174,18 @@ M1 : calendrier + retards,saison,automne,90,1224.1324111423246,582.3875510816717
 M1 : calendrier + retards,saison,hiver,90,2435.056282238388,795.8719734634694
 M1 : calendrier + retards,saison,printemps,89,1643.693868291078,783.5350052892501
 M1 : calendrier + retards,saison,été,92,899.5284652865275,330.086829061969
+M1 : calendrier + retards,trimestre,2023-T1,88,2241.0651632335157,948.1446904682275
+M1 : calendrier + retards,trimestre,2023-T2,90,1097.733486177593,464.72240947254875
+M1 : calendrier + retards,trimestre,2023-T3,92,921.67748931244,278.2071495668892
+M1 : calendrier + retards,trimestre,2023-T4,91,1951.2997621016852,805.3753140617569
 M1 : calendrier + retards,type_jour,Noël,7,2012.3136839193976,628.9908714849327
 M1 : calendrier + retards,type_jour,férié,11,2081.9095886389473,1195.3652855363355
 M1 : calendrier + retards,type_jour,ouvré,244,1586.1535576625581,837.2193762344159
 M1 : calendrier + retards,type_jour,pont,2,1138.4590575324837,1121.048592116233
 M1 : calendrier + retards,type_jour,week-end,97,1361.719258158116,0.7255848121949688
+M1 : calendrier + retards,ferie_selon_jour,férié en semaine,9,2071.867186129534,1789.7866049439533
+M1 : calendrier + retards,ferie_selon_jour,férié le week-end,2,2127.100399931309,-1479.5306517979448
+M1 : calendrier + retards,ferie_selon_jour,non férié,350,1529.9181428957204,602.8484080360212
 M1 : calendrier + retards,classe_temperature,10-15 °C,88,1922.5336933531428,1434.435371240631
 M1 : calendrier + retards,classe_temperature,15-20 °C,76,1125.904888416944,868.1505800293912
 M1 : calendrier + retards,classe_temperature,5-10 °C,82,2015.0492214387532,976.6051968128086
@@ -203,11 +231,18 @@ M2 : M1 + température,saison,automne,90,1197.6995321802258,921.1601350033663
 M2 : M1 + température,saison,hiver,90,2092.0163866513763,1310.7813942089656
 M2 : M1 + température,saison,printemps,89,1780.38036184844,1345.055534962473
 M2 : M1 + température,saison,été,92,945.5853046903322,486.57242328910877
+M2 : M1 + température,trimestre,2023-T1,88,2182.5729586519433,1666.9503452437914
+M2 : M1 + température,trimestre,2023-T2,90,1209.359522864621,856.125563711342
+M2 : M1 + température,trimestre,2023-T3,92,927.495297532578,436.95736489689665
+M2 : M1 + température,trimestre,2023-T4,91,1706.415254271229,1114.3553241470227
 M2 : M1 + température,type_jour,Noël,7,2194.0599746402563,1252.2413977245617
 M2 : M1 + température,type_jour,férié,11,1907.4048704149586,787.7011038144708
 M2 : M1 + température,type_jour,ouvré,244,1579.4477078754012,1239.227636165603
 M2 : M1 + température,type_jour,pont,2,1251.4120018109425,1241.2646373008015
 M2 : M1 + température,type_jour,week-end,97,1209.2185031814406,443.9677191580221
+M2 : M1 + température,ferie_selon_jour,férié en semaine,9,1745.7649023365966,1526.540837151359
+M2 : M1 + température,ferie_selon_jour,férié le week-end,2,2634.7847267675875,-2537.077696201526
+M2 : M1 + température,ferie_selon_jour,non férié,350,1487.2590838751469,1019.0989458325965
 M2 : M1 + température,classe_temperature,10-15 °C,88,1854.549949837238,1499.9757914703614
 M2 : M1 + température,classe_temperature,15-20 °C,76,1155.2757238610707,984.3514827830188
 M2 : M1 + température,classe_temperature,5-10 °C,82,2006.7838107641942,1529.132259382049
@@ -253,11 +288,18 @@ M3 : gradient boosting,saison,automne,90,1042.0688295316265,576.2889353871303
 M3 : gradient boosting,saison,hiver,90,2402.747440232362,1509.2716573367106
 M3 : gradient boosting,saison,printemps,89,2000.236809937202,1666.0070615667555
 M3 : gradient boosting,saison,été,92,894.1161340301732,566.6225215528606
+M3 : gradient boosting,trimestre,2023-T1,88,2593.4598381550645,1738.7124811954934
+M3 : gradient boosting,trimestre,2023-T2,90,1261.373339604147,1078.694605552655
+M3 : gradient boosting,trimestre,2023-T3,92,907.2114807884249,534.4697738976877
+M3 : gradient boosting,trimestre,2023-T4,91,1594.5241993339764,976.3068325705543
 M3 : gradient boosting,type_jour,Noël,7,2015.8691886034665,1101.4926436580067
 M3 : gradient boosting,type_jour,férié,11,1562.9278707770318,969.5120568183931
 M3 : gradient boosting,type_jour,ouvré,244,1642.7006827379269,1234.0833370948794
 M3 : gradient boosting,type_jour,pont,2,2152.762004608142,2152.762004608142
 M3 : gradient boosting,type_jour,week-end,97,1380.2623010093175,662.9630352213899
+M3 : gradient boosting,ferie_selon_jour,férié en semaine,9,1630.0799288039168,1313.6933136233279
+M3 : gradient boosting,ferie_selon_jour,férié le week-end,2,1260.7436096560496,-579.3035988038129
+M3 : gradient boosting,ferie_selon_jour,non férié,350,1580.3457660439956,1078.399203378422
 M3 : gradient boosting,classe_temperature,10-15 °C,88,1926.1865829413043,1548.248702137253
 M3 : gradient boosting,classe_temperature,15-20 °C,76,875.5203394646112,751.4486166743927
 M3 : gradient boosting,classe_temperature,5-10 °C,82,2253.8799101139293,1492.50515065114
@@ -303,11 +345,18 @@ M4 : M1 + ARMA,saison,automne,90,1198.2841202103007,463.4068060921115
 M4 : M1 + ARMA,saison,hiver,90,2345.997246124532,578.5945440066342
 M4 : M1 + ARMA,saison,printemps,89,1670.2445771396356,630.3835998321844
 M4 : M1 + ARMA,saison,été,92,880.7852063263272,260.31718852615705
+M4 : M1 + ARMA,trimestre,2023-T1,88,2164.516758615326,728.7478912835306
+M4 : M1 + ARMA,trimestre,2023-T2,90,1093.61423672049,364.22601912906157
+M4 : M1 + ARMA,trimestre,2023-T3,92,894.0136856263557,218.93709042173356
+M4 : M1 + ARMA,trimestre,2023-T4,91,1950.7397162304078,623.9678545603543
 M4 : M1 + ARMA,type_jour,Noël,7,2102.2009447876144,124.56227344696943
 M4 : M1 + ARMA,type_jour,férié,11,1961.2323558495928,957.0824946403282
 M4 : M1 + ARMA,type_jour,ouvré,244,1560.9294879507706,711.7812090485648
 M4 : M1 + ARMA,type_jour,pont,2,1204.9631847171627,1201.8616702138443
 M4 : M1 + ARMA,type_jour,week-end,97,1330.9654160856032,-140.6674068566178
+M4 : M1 + ARMA,ferie_selon_jour,férié en semaine,9,1920.9199171376797,1577.96325005949
+M4 : M1 + ARMA,ferie_selon_jour,férié le week-end,2,2142.6383300532,-1836.8809047459
+M4 : M1 + ARMA,ferie_selon_jour,non férié,350,1505.9879240092546,466.5872451351838
 M4 : M1 + ARMA,classe_temperature,10-15 °C,88,1844.960844337155,1225.497285757646
 M4 : M1 + ARMA,classe_temperature,15-20 °C,76,1056.9022865098573,716.2548250295328
 M4 : M1 + ARMA,classe_temperature,5-10 °C,82,2024.3069824692975,698.0263117975768
@@ -353,11 +402,18 @@ Plafond : M2 + météo parfaite,saison,automne,90,1041.8124632321756,792.1486060
 Plafond : M2 + météo parfaite,saison,hiver,90,1668.2887121179717,1322.0533801201507
 Plafond : M2 + météo parfaite,saison,printemps,89,1372.1627665652234,1067.824040380559
 Plafond : M2 + météo parfaite,saison,été,92,930.290938872869,553.7516124275882
+Plafond : M2 + météo parfaite,trimestre,2023-T1,88,1793.8983770037719,1605.9547223850286
+Plafond : M2 + météo parfaite,trimestre,2023-T2,90,1076.6251713404001,785.8657283948312
+Plafond : M2 + météo parfaite,trimestre,2023-T3,92,934.0905779630649,527.4841965384066
+Plafond : M2 + météo parfaite,trimestre,2023-T4,91,1218.9307979401344,831.6394449161909
 Plafond : M2 + météo parfaite,type_jour,Noël,7,1829.247635097149,830.2392093827444
 Plafond : M2 + météo parfaite,type_jour,férié,11,2013.0153788153686,782.3092284795413
 Plafond : M2 + météo parfaite,type_jour,ouvré,244,1308.0512214389585,1117.716816217702
 Plafond : M2 + météo parfaite,type_jour,pont,2,884.9920072675777,866.3224619132986
 Plafond : M2 + météo parfaite,type_jour,week-end,97,986.9688012766185,488.52621272602113
+Plafond : M2 + météo parfaite,ferie_selon_jour,férié en semaine,9,1841.4789012129113,1555.1724420142314
+Plafond : M2 + météo parfaite,ferie_selon_jour,férié le week-end,2,2784.929528026427,-2695.575232426564
+Plafond : M2 + météo parfaite,ferie_selon_jour,non férié,350,1227.0719691861516,936.1550433744262
 Plafond : M2 + météo parfaite,classe_temperature,10-15 °C,88,1254.8323543686959,958.3611121626909
 Plafond : M2 + météo parfaite,classe_temperature,15-20 °C,76,1051.0069481706178,690.7490167389038
 Plafond : M2 + météo parfaite,classe_temperature,5-10 °C,82,1665.4220058451963,1423.2228216834988

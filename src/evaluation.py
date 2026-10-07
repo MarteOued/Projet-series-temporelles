@@ -80,3 +80,35 @@ def comparer(reel, previsions):
         nom: resumer(erreurs_par_jour(reel.loc[jours], prevision.loc[jours]))
         for nom, prevision in previsions.items()
     })
+
+
+def diebold_mariano(perte_a, perte_b, retards=7):
+    """Test de Diebold-Mariano : l'écart entre deux méthodes est-il dû au hasard ?
+
+    perte_a, perte_b : une erreur par jour, sur les mêmes jours (par exemple la MAE du jour).
+    Je regarde la différence d = perte_a - perte_b jour par jour. Si les deux méthodes se
+    valent, d vaut 0 en moyenne. Les erreurs de jours proches se ressemblent (une vague de
+    froid dure plusieurs jours) : la variance de la moyenne est donc corrigée avec
+    `retards` jours d'autocorrélation (Newey-West ; 7 = une semaine).
+
+    Renvoie l'écart moyen (négatif = A meilleure), la statistique z et la p-valeur
+    bilatérale (loi normale). p > 0,05 : on ne peut pas dire que l'une est meilleure.
+    """
+    from scipy import stats
+
+    d = np.asarray(perte_a, dtype=float) - np.asarray(perte_b, dtype=float)
+    if d.shape != (len(d),) or len(d) <= retards + 1:
+        raise ValueError("Il faut deux séries de même longueur, plus longues que `retards`.")
+    n = len(d)
+    centre = d - d.mean()
+    autocovariances = [centre[k:] @ centre[:n - k] / n for k in range(retards + 1)]
+    variance = autocovariances[0] + 2 * sum(
+        (1 - k / (retards + 1)) * autocovariances[k] for k in range(1, retards + 1)
+    )
+    z = d.mean() / np.sqrt(variance / n)
+    return {
+        "ecart_moyen": d.mean(),
+        "z": z,
+        "p_valeur": 2 * stats.norm.sf(abs(z)),
+        "part_jours_A_meilleure": (d < 0).mean(),
+    }

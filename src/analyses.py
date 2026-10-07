@@ -12,9 +12,10 @@ Ce que je calcule
    gagnerait avec une prévision météo parfaite. Il n'entre dans aucun choix.
 2. Décision 14 : un seul modèle linéaire pour les 24 heures contre 24 modèles
    (un par heure), sur la validation 2023. Décision 9 : M1 et M2 avec et sans
-   le retrait du confinement, sur la validation 2023.
-3. Erreurs de toutes les méthodes (mêmes jours) par saison, type de jour,
-   température, heure, et biais par mois.
+   le retrait du confinement, sur la validation 2023. Diagnostic de M4.
+3. Erreurs de toutes les méthodes (mêmes jours) par saison, trimestre, type de
+   jour, férié en semaine ou le week-end, température, heure, et biais par mois.
+   Test de Diebold-Mariano : M2 contre chaque autre méthode.
 4. Les 3 pires jours de M2, avec ce qui s'est passé ces jours-là.
 
 Toutes les prévisions suivent le protocole des modèles : 4 blocs trimestriels
@@ -210,6 +211,34 @@ def sensibilite_covid(donnees):
     return pd.DataFrame(lignes)
 
 
+def diagnostic_m4(donnees):
+    """Pourquoi M4 n'aide pas : les erreurs de M1 se répètent-elles d'un jour à l'autre ?
+
+    M4 corrige la prévision avec l'erreur de M1 de la veille (H <= 12) ou de l'avant-veille
+    (H >= 13). Ça ne marche que si ces erreurs se ressemblent d'un jour à l'autre, à la même
+    heure. Je mesure cette ressemblance (autocorrélation) à 1 et 2 jours, sur les erreurs
+    vues par M4 pendant l'apprentissage (2016-2022) et sur les vraies erreurs de 2023.
+    """
+    apprentissage = m1.apprentissage_avant(donnees, m1.BLOCS_VALIDATION_2023[0][1])
+    dans = m1.predire_m1(m1.ajuster_modeles_m1(apprentissage), apprentissage)
+    hors = m1.valider_m1_expanding(donnees).predictions
+    lignes = []
+    for nom, predictions in (("apprentissage 2016-2022 (ce que voit M4)", dans),
+                             ("validation 2023 (erreurs réelles)", hors)):
+        p = predictions.assign(
+            erreur=predictions[m1.COLONNE_CIBLE] - predictions["prediction_MW"]
+        ).sort_values([m1.COLONNE_HEURE, m1.COLONNE_JOUR])
+        par_heure = p.groupby(m1.COLONNE_HEURE)["erreur"]
+        lignes.append({
+            "erreurs_de_M1": nom,
+            "moyenne_MW": p["erreur"].mean(),
+            "ecart_type_MW": p["erreur"].std(),
+            "autocorrelation_1_jour": par_heure.apply(lambda e: e.autocorr(1)).mean(),
+            "autocorrelation_2_jours": par_heure.apply(lambda e: e.autocorr(2)).mean(),
+        })
+    return pd.DataFrame(lignes)
+
+
 # ===========================================================================
 # 3. Erreurs par groupe de jours (mêmes jours pour toutes les méthodes)
 # ===========================================================================
@@ -232,9 +261,15 @@ def description_des_jours(jours):
         ["férié", "pont", "Noël", "week-end"], default="ouvré",
     )
     t = temperature.reindex(jours)
+    ferie_selon_jour = np.select(
+        [(calendrier["ferie"] == 1) & (calendrier["weekend"] == 1), calendrier["ferie"] == 1],
+        ["férié le week-end", "férié en semaine"], default="non férié",
+    )
     return pd.DataFrame({
         "saison": jours.month.map(SAISONS),
+        "trimestre": [f"{j.year}-T{(j.month - 1) // 3 + 1}" for j in jours],
         "type_jour": type_jour,
+        "ferie_selon_jour": ferie_selon_jour,
         "temperature_C": t.to_numpy(),
         "classe_temperature": pd.cut(t, [-np.inf, 5, 10, 15, 20, np.inf],
                                      labels=["< 5 °C", "5-10 °C", "10-15 °C", "15-20 °C", "> 20 °C"]).astype(str),
@@ -249,7 +284,8 @@ def erreurs_par_groupe(reel, previsions):
     lignes = []
     for nom, prevision in previsions.items():
         erreurs = evaluation.erreurs_par_jour(reel.loc[jours], prevision.loc[jours]).join(description)
-        for critere in ("saison", "type_jour", "classe_temperature", "mois"):
+        for critere in ("saison", "trimestre", "type_jour", "ferie_selon_jour",
+                        "classe_temperature", "mois"):
             for groupe, sous in erreurs.groupby(critere):
                 lignes.append({"methode": nom, "critere": critere, "groupe": groupe,
                                "nb_jours": len(sous), "MAE_MW": sous["mae"].mean(),
@@ -259,6 +295,39 @@ def erreurs_par_groupe(reel, previsions):
             lignes.append({"methode": nom, "critere": "heure", "groupe": heure,
                            "nb_jours": len(jours), "MAE_MW": ecart[heure].abs().mean(),
                            "biais_MW": ecart[heure].mean()})
+    return pd.DataFrame(lignes)
+
+
+# ===========================================================================
+# 3 bis. L'écart entre deux méthodes est-il significatif ?
+# ===========================================================================
+
+def significativite(reel, previsions, reference="M2 : M1 + température"):
+    """Test de Diebold-Mariano entre la référence et chaque autre méthode, mêmes jours.
+
+    Deux pertes par jour : l'erreur absolue moyenne (MAE) et l'erreur quadratique moyenne
+    (qui donne le RMSE). Une p-valeur > 0,05 veut dire : écart compatible avec le hasard.
+    """
+    jours = evaluation.jours_comparables(reel, *previsions.values())
+    erreurs = {nom: evaluation.erreurs_par_jour(reel.loc[jours], p.loc[jours])
+               for nom, p in previsions.items()}
+    lignes = []
+    for autre in previsions:
+        if autre == reference:
+            continue
+        for perte, colonne, carre in (("MAE", "mae", False), ("RMSE", "rmse", True)):
+            a, b = erreurs[reference][colonne], erreurs[autre][colonne]
+            if carre:
+                a, b = a ** 2, b ** 2
+            test = evaluation.diebold_mariano(a, b)
+            lignes.append({
+                "reference": reference, "autre_methode": autre, "perte": perte,
+                "ecart_moyen": test["ecart_moyen"], "z": test["z"], "p_valeur": test["p_valeur"],
+                "part_jours_reference_meilleure": test["part_jours_A_meilleure"],
+                "conclusion": ("écart non significatif" if test["p_valeur"] > 0.05
+                               else "référence meilleure" if test["ecart_moyen"] < 0
+                               else "autre méthode meilleure"),
+            })
     return pd.DataFrame(lignes)
 
 
@@ -313,6 +382,9 @@ def main(argv=None):
     print("Décision 9 : sensibilité au retrait du confinement (2023)")
     _sauver(sensibilite_covid(donnees), "sensibilite_covid_2023")
 
+    print("Diagnostic de M4 : les erreurs de M1 se répètent-elles ? (2023)")
+    _sauver(diagnostic_m4(donnees), "diagnostic_m4_2023")
+
     periodes = [("validation", "2023")] + ([("test", "2024_2025")] if args.test_final else [])
     conso_h = rte.lire_prepare()
     for nom_periode, suffixe in periodes:
@@ -323,6 +395,7 @@ def main(argv=None):
         print(f"Erreurs détaillées et pires jours ({nom_periode})")
         _, reel, previsions = comparaison.comparer_periode(nom_periode, args.test_final, conso_h)
         _sauver(erreurs_par_groupe(reel, previsions), f"erreurs_par_groupe_{suffixe}")
+        _sauver(significativite(reel, previsions), f"significativite_{suffixe}")
         _sauver(pires_jours(reel, previsions), f"pires_jours_m2_{suffixe}")
 
 

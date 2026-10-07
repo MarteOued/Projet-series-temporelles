@@ -1,0 +1,15 @@
+reference,autre_methode,perte,ecart_moyen,z,p_valeur,part_jours_reference_meilleure,conclusion
+M2 : M1 + température,B0 : veille effective,MAE,-1812.619697559928,-15.837030971415016,1.7278880013785113e-56,0.7119113573407202,référence meilleure
+M2 : M1 + température,B0 : veille effective,RMSE,-16297411.58992593,-14.308952989392044,1.923879700043574e-46,0.739612188365651,référence meilleure
+M2 : M1 + température,B1 : semaine précédente,MAE,-1967.5289196282567,-5.842711852738501,5.135780933567796e-09,0.7063711911357341,référence meilleure
+M2 : M1 + température,B1 : semaine précédente,RMSE,-20891270.458577823,-4.8312761637474235,1.3566067734785024e-06,0.7063711911357341,référence meilleure
+M2 : M1 + température,B2 : moyenne de 4 semaines,MAE,-2662.3796092635293,-5.809465899721932,6.267245734084283e-09,0.7977839335180056,référence meilleure
+M2 : M1 + température,B2 : moyenne de 4 semaines,RMSE,-30284173.698173776,-4.070479145092691,4.691654124331061e-05,0.7977839335180056,référence meilleure
+M2 : M1 + température,M1 : calendrier + retards,MAE,-46.676516780234515,-0.7669027698452846,0.44313932671508016,0.518005540166205,écart non significatif
+M2 : M1 + température,M1 : calendrier + retards,RMSE,-421358.8094431345,-1.0738487154078222,0.2828904918886419,0.5346260387811634,écart non significatif
+M2 : M1 + température,M3 : gradient boosting,MAE,-79.75371679523532,-1.0942452717147144,0.2738474209771895,0.518005540166205,écart non significatif
+M2 : M1 + température,M3 : gradient boosting,RMSE,-879590.1705421639,-1.980036984018118,0.04769937307849765,0.5346260387811634,référence meilleure
+M2 : M1 + température,M4 : M1 + ARMA,MAE,-19.79832794104914,-0.3153716904768341,0.7524794586622765,0.481994459833795,écart non significatif
+M2 : M1 + température,M4 : M1 + ARMA,RMSE,-388571.8112000838,-0.9669314612117067,0.3335782977279367,0.5263157894736842,écart non significatif
+M2 : M1 + température,Plafond : M2 + météo parfaite,MAE,249.0409267278222,3.970429212908635,7.174326974885751e-05,0.4293628808864266,autre méthode meilleure
+M2 : M1 + température,Plafond : M2 + météo parfaite,RMSE,1421837.2427937228,3.3895018299418957,0.0007001974154314289,0.4265927977839335,autre méthode meilleure
