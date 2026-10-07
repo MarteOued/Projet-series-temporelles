@@ -1,1150 +1,128 @@
+"""Test de non-fuite de la table des variables à 14 h (src/features.py).
+
+Principe : à 14 h le jour J, je ne connais que le passé. Si je remplace par
+n'importe quoi TOUT ce qui arrive après (consommation après la tranche
+12 h-13 h, météo après 13 h), les variables de J+1 ne doivent pas bouger.
+Seule la cible (la consommation réelle de J+1) change, puisqu'on la prévoit.
+
+Contrôle inverse : si je change la DERNIÈRE information autorisée, les
+variables doivent bouger ; sinon le test ne prouverait rien.
+"""
 import numpy as np
 import pandas as pd
 import pytest
 
-from sklearn.preprocessing import OneHotEncoder
+from src import config, features, protocole
 
-from src import modeles_lineaires
-from src import modeles_meteo
+DEBUT, FIN = "2022-11-01", "2023-08-31"
+CIBLE = "consommation_cible_MW"
 
 
-# ============================================================
-# Dataset synthétique
-# ============================================================
-
-def dataset_test_m2():
-    """
-    Dataset synthétique contenant M1 et les trois
-    représentations météorologiques.
-    """
-
-    lignes = []
-
-    dates_train = pd.date_range(
-        "2022-01-01",
-        periods=14,
-        freq="D",
+def fausses_donnees(graine=0):
+    rng = np.random.default_rng(graine)
+    heures = pd.date_range(f"{DEBUT} 00:00", f"{FIN} 23:00", freq="h", tz="UTC")
+    n = len(heures)
+    consommation = pd.Series(
+        50_000 + 5_000 * np.sin(np.arange(n) * 2 * np.pi / 24) + rng.normal(0, 500, n),
+        index=heures, name="consommation_MW",
     )
-
-    dates_validation = pd.date_range(
-        "2023-01-01",
-        periods=4,
-        freq="D",
+    base = 10 + 8 * np.sin(np.arange(n) * 2 * np.pi / (24 * 365)) + rng.normal(0, 1, n)
+    meteo = pd.DataFrame(
+        {nom: base + decalage for nom, decalage in
+         zip(features.COLONNES_TEMPERATURE_OPERATIONNELLE, (0.0, 0.3, -0.2))},
+        index=heures,
     )
-
-    for periode, dates in [
-        ("apprentissage", dates_train),
-        ("validation", dates_validation),
-    ]:
-
-        for jour in dates:
-
-            temperature = 8.0 + 0.2 * jour.day
-
-            for heure in range(24):
-
-                base = (
-                    40_000
-                    + 100 * heure
-                    + 20 * jour.day
-                )
-
-                ligne = {
-                    "jour_cible": jour,
-                    "heure_cible": heure,
-                    "periode": periode,
-                    "exclu_covid": False,
-
-                    "conso_veille_effective_MW":
-                        base - 500,
-
-                    "conso_lag48_MW":
-                        base - 600,
-
-                    "conso_lag168_MW":
-                        base - 700,
-
-                    "jour_semaine":
-                        jour.dayofweek,
-
-                    "mois":
-                        jour.month,
-
-                    "ferie": 0,
-                    "veille_ferie": 0,
-                    "lendemain_ferie": 0,
-                    "pont_potentiel": 0,
-                    "vacances_A": 0,
-                    "vacances_B": 0,
-                    "vacances_C": 0,
-
-                    "consommation_cible_MW":
-                        base,
-                }
-
-                for indice, candidat in enumerate(
-                    modeles_meteo
-                    .CANDIDATS_TEMPERATURE
-                ):
-
-                    decalage = 0.1 * indice
-
-                    t = (
-                        temperature
-                        + decalage
-                    )
-
-                    ligne[
-                        f"{candidat}_origine"
-                    ] = t
-
-                    ligne[
-                        f"{candidat}_veille"
-                    ] = (
-                        t - 0.5
-                    )
-
-                    ligne[
-                        f"{candidat}_lissee"
-                    ] = (
-                        t - 0.2
-                    )
-
-                    ligne[
-                        f"{candidat}_"
-                        "degres_chauffage_origine"
-                    ] = max(
-                        0.0,
-                        15.0 - t,
-                    )
-
-                    ligne[
-                        f"{candidat}_"
-                        "degres_chauffage_lisses"
-                    ] = max(
-                        0.0,
-                        15.0 - (t - 0.2),
-                    )
-
-                    ligne[
-                        f"{candidat}_"
-                        "degres_climatisation_origine"
-                    ] = max(
-                        0.0,
-                        t - 22.0,
-                    )
-
-                    ligne[
-                        f"{candidat}_"
-                        "degres_climatisation_lisses"
-                    ] = max(
-                        0.0,
-                        (t - 0.2) - 22.0,
-                    )
-
-                lignes.append(
-                    ligne
-                )
-
-    return pd.DataFrame(
-        lignes
-    )
+    jours = pd.date_range(DEBUT, FIN, freq="D")
+    calendrier = pd.DataFrame(0, index=jours, columns=features.COLONNES_CALENDRIER)
+    calendrier["jour_semaine"] = jours.dayofweek
+    calendrier["mois"] = jours.month
+    calendrier["weekend"] = (jours.dayofweek >= 5).astype(int)
+    calendrier.index.name = "date"
+    return consommation, meteo, calendrier
 
 
-# ============================================================
-# Candidats température
-# ============================================================
-
-def test_trois_candidats_temperature():
-
-    assert (
-        modeles_meteo
-        .CANDIDATS_TEMPERATURE
-        == [
-            "temp_8_villes",
-            "temp_38_simple",
-            "temp_38_ponderee",
-        ]
-    )
+def ligne_de_la_cible(consommation, meteo, calendrier, jour_J):
+    """Les 24 lignes du jour cible J+1, construites comme dans le vrai pipeline."""
+    cible = pd.Timestamp(jour_J) + pd.Timedelta(days=1)
+    dataset = features.construire_dataset(consommation, meteo, calendrier, cible, cible)
+    assert len(dataset) == 24
+    return dataset.set_index("heure_cible")
 
 
-def test_candidat_invalide():
+def brouiller_le_futur(consommation, meteo, jour_J):
+    """Remplace tout ce qui n'est pas connu à 14 h le jour J par des valeurs absurdes."""
+    consommation, meteo = consommation.copy(), meteo.copy()
+    fin_conso = protocole.fin_des_donnees_connues(jour_J)       # fin de la tranche 12 h-13 h
+    debut_tranche = consommation.index
+    inconnue = debut_tranche + pd.Timedelta(hours=1) > fin_conso
+    consommation[inconnue] = 999_999.0
+    meteo.loc[meteo.index > protocole.limite_meteo_connue(jour_J)] = 99.0
+    return consommation, meteo
 
-    with pytest.raises(
-        ValueError
-    ):
-        (
-            modeles_meteo
-            .verifier_candidat_temperature(
-                "temperature_future"
-            )
+
+JOURS = [
+    "2023-01-17",   # hiver : 13 h Paris = 12 h UTC
+    "2023-07-12",   # été : 13 h Paris = 11 h UTC
+    "2023-03-26",   # jour J de 23 h : l'historique traverse le changement d'heure
+]
+
+
+@pytest.mark.parametrize("jour_J", JOURS)
+def test_rien_de_ce_qui_suit_14h_ne_change_les_variables(jour_J):
+    consommation, meteo, calendrier = fausses_donnees()
+    normal = ligne_de_la_cible(consommation, meteo, calendrier, jour_J)
+
+    conso_brouillee, meteo_brouillee = brouiller_le_futur(consommation, meteo, jour_J)
+    brouille = ligne_de_la_cible(conso_brouillee, meteo_brouillee, calendrier, jour_J)
+
+    variables = [c for c in normal.columns if c != CIBLE]
+    pd.testing.assert_frame_equal(normal[variables], brouille[variables])
+    # la cible, elle, change bien : le brouillage a vraiment eu lieu
+    assert (brouille[CIBLE] == 999_999.0).all()
+
+
+def test_les_jours_de_changement_d_heure_ne_sont_pas_des_cibles():
+    consommation, meteo, calendrier = fausses_donnees()
+    cible = pd.Timestamp("2023-03-26")
+    assert features.construire_dataset(consommation, meteo, calendrier, cible, cible).empty
+
+
+@pytest.mark.parametrize("jour_J", ["2023-01-17", "2023-07-12"])
+def test_la_derniere_consommation_autorisee_compte(jour_J):
+    # Contrôle inverse : la tranche 12 h-13 h du jour J est connue à 14 h ;
+    # elle doit servir (retard de 24 h) pour prévoir l'heure 12 de J+1.
+    consommation, meteo, calendrier = fausses_donnees()
+    normal = ligne_de_la_cible(consommation, meteo, calendrier, jour_J)
+
+    tranche_12h = pd.Timestamp(f"{jour_J} 12:00", tz=config.FUSEAU).tz_convert("UTC")
+    assert protocole.est_connue_a_14h(tranche_12h, jour_J)
+    modifiee = consommation.copy()
+    modifiee[tranche_12h] += 10_000
+    change = ligne_de_la_cible(modifiee, meteo, calendrier, jour_J)
+
+    assert change.loc[12, "conso_veille_effective_MW"] == normal.loc[12, "conso_veille_effective_MW"] + 10_000
+    # l'heure 13 de J+1, elle, ne peut pas utiliser la tranche 13 h-14 h du jour J
+    assert change.loc[13, "retard_effectif_h"] == 48
+
+
+@pytest.mark.parametrize("jour_J", ["2023-01-17", "2023-07-12"])
+def test_la_derniere_meteo_autorisee_compte(jour_J):
+    consommation, meteo, calendrier = fausses_donnees()
+    normal = ligne_de_la_cible(consommation, meteo, calendrier, jour_J)
+
+    limite = protocole.limite_meteo_connue(jour_J)
+    modifiee = meteo.copy()
+    modifiee.loc[limite] += 5.0
+    change = ligne_de_la_cible(consommation, modifiee, calendrier, jour_J)
+
+    for colonne in features.COLONNES_TEMPERATURE_OPERATIONNELLE:
+        assert change[f"{colonne}_origine"].iloc[0] == pytest.approx(
+            normal[f"{colonne}_origine"].iloc[0] + 5.0
         )
 
 
-# ============================================================
-# Variantes météo
-# ============================================================
-
-def test_six_variantes_meteo():
-
-    assert list(
-        modeles_meteo
-        .VARIANTES_METEO_M2
-        .keys()
-    ) == [
-        "M2-A",
-        "M2-B",
-        "M2-C",
-        "M2-D",
-        "M2-E",
-        "M2-F",
-    ]
-
-
-def test_variante_invalide():
-
-    with pytest.raises(
-        ValueError
-    ):
-        (
-            modeles_meteo
-            .verifier_variante_meteo(
-                "M2-Z"
-            )
-        )
-
-
-def test_variante_defaut_est_m2_f():
-
-    assert (
-        modeles_meteo
-        .VARIANTE_METEO_DEFAUT
-        == "M2-F"
-    )
-
-
-def test_nombre_variables_par_variante():
-
-    attendu = {
-        "M2-A": 1,
-        "M2-B": 2,
-        "M2-C": 3,
-        "M2-D": 4,
-        "M2-E": 6,
-        "M2-F": 7,
-    }
-
-    for variante, nombre in attendu.items():
-
-        variables = (
-            modeles_meteo
-            .variables_meteo_m2(
-                "temp_8_villes",
-                variante,
-            )
-        )
-
-        assert (
-            len(variables)
-            == nombre
-        )
-
-
-def test_m2_a_origine_seulement():
-
-    variables = (
-        modeles_meteo
-        .variables_meteo_m2(
-            "temp_8_villes",
-            "M2-A",
-        )
-    )
-
-    assert variables == [
-        "temp_8_villes_origine",
-    ]
-
-
-def test_m2_b_origine_veille():
-
-    variables = (
-        modeles_meteo
-        .variables_meteo_m2(
-            "temp_8_villes",
-            "M2-B",
-        )
-    )
-
-    assert variables == [
-        "temp_8_villes_origine",
-        "temp_8_villes_veille",
-    ]
-
-
-def test_m2_c_origine_veille_lissee():
-
-    variables = (
-        modeles_meteo
-        .variables_meteo_m2(
-            "temp_8_villes",
-            "M2-C",
-        )
-    )
-
-    assert variables == [
-        "temp_8_villes_origine",
-        "temp_8_villes_veille",
-        "temp_8_villes_lissee",
-    ]
-
-
-def test_m2_d_chauffage_sans_veille():
-
-    variables = (
-        modeles_meteo
-        .variables_meteo_m2(
-            "temp_8_villes",
-            "M2-D",
-        )
-    )
-
-    assert variables == [
-        "temp_8_villes_origine",
-        "temp_8_villes_lissee",
-        (
-            "temp_8_villes_"
-            "degres_chauffage_origine"
-        ),
-        (
-            "temp_8_villes_"
-            "degres_chauffage_lisses"
-        ),
-    ]
-
-    assert (
-        "temp_8_villes_veille"
-        not in variables
-    )
-
-
-def test_m2_e_sans_veille():
-
-    variables = (
-        modeles_meteo
-        .variables_meteo_m2(
-            "temp_8_villes",
-            "M2-E",
-        )
-    )
-
-    assert (
-        len(variables)
-        == 6
-    )
-
-    assert (
-        "temp_8_villes_veille"
-        not in variables
-    )
-
-
-def test_m2_f_sept_variables():
-
-    variables = (
-        modeles_meteo
-        .variables_meteo_m2(
-            "temp_8_villes",
-            "M2-F",
-        )
-    )
-
-    assert variables == [
-        "temp_8_villes_origine",
-        "temp_8_villes_veille",
-        "temp_8_villes_lissee",
-        (
-            "temp_8_villes_"
-            "degres_chauffage_origine"
-        ),
-        (
-            "temp_8_villes_"
-            "degres_chauffage_lisses"
-        ),
-        (
-            "temp_8_villes_"
-            "degres_climatisation_origine"
-        ),
-        (
-            "temp_8_villes_"
-            "degres_climatisation_lisses"
-        ),
-    ]
-
-
-def test_appel_sans_variante_reproduit_m2_f():
-
-    for candidat in (
-        modeles_meteo
-        .CANDIDATS_TEMPERATURE
-    ):
-
-        assert (
-            modeles_meteo
-            .variables_meteo_m2(
-                candidat
-            )
-            ==
-            modeles_meteo
-            .variables_meteo_m2(
-                candidat,
-                "M2-F",
-            )
-        )
-
-
-# ============================================================
-# Météo parfaite
-# ============================================================
-
-def test_aucune_meteo_parfaite():
-
-    for candidat in (
-        modeles_meteo
-        .CANDIDATS_TEMPERATURE
-    ):
-
-        for variante in (
-            modeles_meteo
-            .VARIANTES_METEO_M2
-        ):
-
-            variables = (
-                modeles_meteo
-                .variables_meteo_m2(
-                    candidat,
-                    variante,
-                )
-            )
-
-            assert not any(
-                "meteo_parfaite"
-                in variable
-                for variable in variables
-            )
-
-
-def test_interdiction_explicite_meteo_parfaite():
-
-    with pytest.raises(
-        ValueError
-    ):
-        (
-            modeles_meteo
-            .verifier_absence_meteo_parfaite(
-                [
-                    (
-                        "temp_8_villes_"
-                        "meteo_parfaite"
-                    )
-                ]
-            )
-        )
-
-
-# ============================================================
-# Relation M1 / M2
-# ============================================================
-
-def test_toutes_variantes_contiennent_m1():
-
-    for heure in range(24):
-
-        m1 = set(
-            modeles_lineaires
-            .variables_m1(
-                heure
-            )
-        )
-
-        for variante in (
-            modeles_meteo
-            .VARIANTES_METEO_M2
-        ):
-
-            m2 = set(
-                modeles_meteo
-                .variables_m2(
-                    heure,
-                    "temp_8_villes",
-                    variante,
-                )
-            )
-
-            assert (
-                m1.issubset(m2)
-            )
-
-
-def test_nombre_variables_ajoutees():
-
-    attendu = {
-        "M2-A": 1,
-        "M2-B": 2,
-        "M2-C": 3,
-        "M2-D": 4,
-        "M2-E": 6,
-        "M2-F": 7,
-    }
-
-    for heure in range(24):
-
-        m1 = set(
-            modeles_lineaires
-            .variables_m1(
-                heure
-            )
-        )
-
-        for variante, nombre in attendu.items():
-
-            m2 = set(
-                modeles_meteo
-                .variables_m2(
-                    heure,
-                    "temp_38_simple",
-                    variante,
-                )
-            )
-
-            ajout = (
-                m2 - m1
-            )
-
-            assert (
-                len(ajout)
-                == nombre
-            )
-
-
-def test_meme_structure_retards_que_m1():
-
-    for heure in range(24):
-
-        retards_m1 = set(
-            modeles_lineaires
-            .variables_retards_m1(
-                heure
-            )
-        )
-
-        for variante in (
-            modeles_meteo
-            .VARIANTES_METEO_M2
-        ):
-
-            variables_m2 = set(
-                modeles_meteo
-                .variables_m2(
-                    heure,
-                    "temp_38_ponderee",
-                    variante,
-                )
-            )
-
-            assert (
-                retards_m1
-                .issubset(
-                    variables_m2
-                )
-            )
-
-
-def test_pas_weekend_dans_m2():
-
-    for heure in range(24):
-
-        for variante in (
-            modeles_meteo
-            .VARIANTES_METEO_M2
-        ):
-
-            variables = (
-                modeles_meteo
-                .variables_m2(
-                    heure,
-                    "temp_8_villes",
-                    variante,
-                )
-            )
-
-            assert (
-                "weekend"
-                not in variables
-            )
-
-
-# ============================================================
-# Isolation des candidats météo
-# ============================================================
-
-def test_m2_nutilise_quun_candidat_meteo():
-
-    for candidat in (
-        modeles_meteo
-        .CANDIDATS_TEMPERATURE
-    ):
-
-        autres = [
-            autre
-            for autre in (
-                modeles_meteo
-                .CANDIDATS_TEMPERATURE
-            )
-            if autre != candidat
-        ]
-
-        for variante in (
-            modeles_meteo
-            .VARIANTES_METEO_M2
-        ):
-
-            variables = (
-                modeles_meteo
-                .variables_m2(
-                    12,
-                    candidat,
-                    variante,
-                )
-            )
-
-            for autre in autres:
-
-                assert not any(
-                    variable.startswith(
-                        autre + "_"
-                    )
-                    for variable in variables
-                )
-
-
-# ============================================================
-# Pipeline
-# ============================================================
-
-def test_pipeline_m2():
-
-    modele = (
-        modeles_meteo
-        .construire_modele_m2(
-            8,
-            "temp_8_villes",
-            "M2-A",
-        )
-    )
-
-    assert (
-        "preparation"
-        in modele.named_steps
-    )
-
-    assert (
-        "regression"
-        in modele.named_steps
-    )
-
-
-def test_pipeline_m2_encode_categories():
-
-    modele = (
-        modeles_meteo
-        .construire_modele_m2(
-            8,
-            "temp_38_simple",
-            "M2-F",
-        )
-    )
-
-    preparation = (
-        modele.named_steps[
-            "preparation"
-        ]
-    )
-
-    transformeurs = {
-        nom: transformeur
-        for (
-            nom,
-            transformeur,
-            _,
-        ) in preparation.transformers
-    }
-
-    assert isinstance(
-        transformeurs[
-            "categoriel"
-        ],
-        OneHotEncoder,
-    )
-
-
-# ============================================================
-# Ajustement
-# ============================================================
-
-@pytest.mark.parametrize(
-    "variante",
-    [
-        "M2-A",
-        "M2-C",
-        "M2-F",
-    ],
-)
-def test_ajuste_24_modeles_m2(
-    variante,
-):
-
-    donnees = (
-        dataset_test_m2()
-    )
-
-    train = (
-        modeles_lineaires
-        .extraire_apprentissage(
-            donnees
-        )
-    )
-
-    modeles = (
-        modeles_meteo
-        .ajuster_modeles_m2(
-            train,
-            "temp_8_villes",
-            variante,
-        )
-    )
-
-    assert set(
-        modeles.keys()
-    ) == set(
-        range(24)
-    )
-
-
-# ============================================================
-# Prédiction
-# ============================================================
-
-@pytest.mark.parametrize(
-    "variante",
-    [
-        "M2-A",
-        "M2-D",
-        "M2-F",
-    ],
-)
-def test_predictions_m2_meme_taille(
-    variante,
-):
-
-    donnees = (
-        dataset_test_m2()
-    )
-
-    train = (
-        modeles_lineaires
-        .extraire_apprentissage(
-            donnees
-        )
-    )
-
-    validation = (
-        modeles_lineaires
-        .extraire_validation(
-            donnees
-        )
-    )
-
-    modeles = (
-        modeles_meteo
-        .ajuster_modeles_m2(
-            train,
-            "temp_8_villes",
-            variante,
-        )
-    )
-
-    predictions = (
-        modeles_meteo
-        .predire_m2(
-            modeles,
-            validation,
-            "temp_8_villes",
-            variante,
-        )
-    )
-
-    assert (
-        len(predictions)
-        == len(validation)
-    )
-
-    assert not predictions[
-        "prediction_MW"
-    ].isna().any()
-
-
-def test_predictions_m2_toutes_heures():
-
-    donnees = (
-        dataset_test_m2()
-    )
-
-    train = (
-        modeles_lineaires
-        .extraire_apprentissage(
-            donnees
-        )
-    )
-
-    validation = (
-        modeles_lineaires
-        .extraire_validation(
-            donnees
-        )
-    )
-
-    modeles = (
-        modeles_meteo
-        .ajuster_modeles_m2(
-            train,
-            "temp_38_simple",
-            "M2-B",
-        )
-    )
-
-    predictions = (
-        modeles_meteo
-        .predire_m2(
-            modeles,
-            validation,
-            "temp_38_simple",
-            "M2-B",
-        )
-    )
-
-    assert set(
-        predictions[
-            "heure_cible"
-        ].unique()
-    ) == set(
-        range(24)
-    )
-
-
-# ============================================================
-# NaN
-# ============================================================
-
-def test_nan_meteo_refuse():
-
-    donnees = (
-        dataset_test_m2()
-    )
-
-    train = (
-        modeles_lineaires
-        .extraire_apprentissage(
-            donnees
-        )
-    )
-
-    index = train.index[
-        train[
-            "heure_cible"
-        ] == 0
-    ][0]
-
-    train.loc[
-        index,
-        "temp_8_villes_origine",
-    ] = np.nan
-
-    with pytest.raises(
-        ValueError
-    ):
-        (
-            modeles_meteo
-            .ajuster_modeles_m2(
-                train,
-                "temp_8_villes",
-                "M2-A",
-            )
-        )
-
-
-# ============================================================
-# Anti-fuite
-# ============================================================
-
-def test_aucune_colonne_future_dans_m2():
-
-    interdites = {
-        "consommation_cible_MW",
-        "date_heure_cible_utc",
-        "date_heure_origine_utc",
-        "periode",
-        "exclu_covid",
-        "horizon_h",
-    }
-
-    for candidat in (
-        modeles_meteo
-        .CANDIDATS_TEMPERATURE
-    ):
-
-        for variante in (
-            modeles_meteo
-            .VARIANTES_METEO_M2
-        ):
-
-            for heure in range(24):
-
-                variables = set(
-                    modeles_meteo
-                    .variables_m2(
-                        heure,
-                        candidat,
-                        variante,
-                    )
-                )
-
-                assert (
-                    variables
-                    .isdisjoint(
-                        interdites
-                    )
-                )
-
-
-# ============================================================
-# Rétrocompatibilité M2-F
-# ============================================================
-
-def test_m2_f_reproduit_appel_par_defaut():
-
-    for heure in [
-        0,
-        12,
-        13,
-        23,
-    ]:
-
-        for candidat in (
-            modeles_meteo
-            .CANDIDATS_TEMPERATURE
-        ):
-
-            assert (
-                modeles_meteo
-                .variables_m2(
-                    heure,
-                    candidat,
-                )
-                ==
-                modeles_meteo
-                .variables_m2(
-                    heure,
-                    candidat,
-                    "M2-F",
-                )
-            )
-
-
-# ============================================================
-# Métriques par bloc
-# ============================================================
-
-def test_metriques_par_bloc():
-
-    predictions = []
-
-    for bloc in [
-        "T1",
-        "T2",
-        "T3",
-        "T4",
-    ]:
-
-        for i in range(2):
-
-            predictions.append(
-                {
-                    "bloc_validation":
-                        bloc,
-
-                    "consommation_cible_MW":
-                        100.0,
-
-                    "prediction_MW":
-                        100.0 + i,
-                }
-            )
-
-    resultat = (
-        modeles_meteo
-        .ResultatValidationM2(
-            candidat_temperature=
-                "temp_8_villes",
-
-            predictions=
-                pd.DataFrame(
-                    predictions
-                ),
-
-            metriques={},
-
-            variante_meteo=
-                "M2-A",
-        )
-    )
-
-    tableau = (
-        modeles_meteo
-        .metriques_par_bloc(
-            resultat
-        )
-    )
-
-    assert (
-        len(tableau)
-        == 4
-    )
-
-    assert list(
-        tableau[
-            "bloc"
-        ]
-    ) == [
-        "T1",
-        "T2",
-        "T3",
-        "T4",
-    ]
-
-
-# ============================================================
-# Structures des résultats
-# ============================================================
-
-def test_structure_resultat_comparaison():
-
-    resultats = {
-        "temp_8_villes":
-            modeles_meteo
-            .ResultatValidationM2(
-                candidat_temperature=
-                    "temp_8_villes",
-
-                predictions=
-                    pd.DataFrame(),
-
-                metriques={},
-
-                variante_meteo=
-                    "M2-F",
-            )
-    }
-
-    tableau = pd.DataFrame(
-        {
-            "candidat_temperature":
-                [
-                    "temp_8_villes"
-                ],
-
-            "MAE_MW":
-                [
-                    1000.0
-                ],
-        }
-    )
-
-    comparaison = (
-        modeles_meteo
-        .ResultatComparaisonM2(
-            resultats=resultats,
-            tableau=tableau,
-        )
-    )
-
-    assert (
-        "temp_8_villes"
-        in comparaison.resultats
-    )
-
-    assert (
-        len(comparaison.tableau)
-        == 1
-    )
-
-
-def test_structure_resultat_ablation():
-
-    cle = (
-        "temp_8_villes",
-        "M2-A",
-    )
-
-    resultats = {
-        cle:
-            modeles_meteo
-            .ResultatValidationM2(
-                candidat_temperature=
-                    "temp_8_villes",
-
-                predictions=
-                    pd.DataFrame(),
-
-                metriques={},
-
-                variante_meteo=
-                    "M2-A",
-            )
-    }
-
-    tableau = pd.DataFrame(
-        {
-            "candidat_temperature":
-                [
-                    "temp_8_villes"
-                ],
-
-            "variante_meteo":
-                [
-                    "M2-A"
-                ],
-
-            "MAE_MW":
-                [
-                    1000.0
-                ],
-        }
-    )
-
-    resultat = (
-        modeles_meteo
-        .ResultatAblationM2(
-            resultats=resultats,
-            tableau=tableau,
-        )
-    )
-
-    assert (
-        cle
-        in resultat.resultats
-    )
-
-    assert (
-        len(resultat.tableau)
-        == 1
-    )
+def test_aucune_colonne_meteo_parfaite_dans_le_dataset():
+    consommation, meteo, calendrier = fausses_donnees()
+    meteo["temp_8_villes_meteo_parfaite"] = 0.0
+    dataset = features.construire_dataset(consommation, meteo, calendrier, "2023-01-18", "2023-01-18")
+    assert not [c for c in dataset.columns if "meteo_parfaite" in c]
