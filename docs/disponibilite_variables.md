@@ -1,19 +1,35 @@
-# Tableau de disponibilité des variables (brouillon)
+# Tableau de disponibilité des variables
 
 Question à laquelle chaque ligne répond : *cette prévision aurait-elle réellement pu être calculée à 14 h le jour J ?*
-À compléter et à vérifier au fil du projet (une colonne « Statut » indique où en est chaque ligne).
+Les variables des modèles sont construites par `src/features.py` (une ligne par jour cible J+1 et
+par heure H). Le test `tests/test_features.py` remplace par des valeurs absurdes tout ce qui suit
+14 h le jour J et vérifie qu'aucune variable ne change.
 
-| Variable | Source | Disponible à 14 h le jour J ? | Observé ou prévu | Utilisation | Risque de fuite | Statut |
+## Variables utilisées par les modèles
+
+| Variable (colonne du dataset) | Source | Disponible à 14 h le jour J ? | Observé ou prévu | Modèles | Risque de fuite | Statut |
 |---|---|---|---|---|---|---|
-| Consommation de J jusqu'à la tranche 12 h-13 h | éCO2mix | Oui. Le temps réel est publié toutes les 15 min, en ligne environ 11 à 13 min après la fin du quart d'heure (2 mesures, 3/10/2026). La tranche 13 h-14 h n'est pas complète à 14 h | Observé | Retard 24 h (H ≤ 12), niveau récent | Notre historique est la version consolidée ou définitive, plus propre que le temps réel disponible à 14 h (écart non mesurable : RTE efface le temps réel) | Vérifié (notebook 01, étape 11 ; `src/protocole.py` ; `tests/test_protocole.py`) |
-| Consommation de J-1 et avant | éCO2mix | Oui | Observé | Retards 48 h et 168 h, moyennes | Faible. Même limite de version : 2025 est consolidée, pas définitive | Vérifié (même source) |
-| Consommation de J+1 | éCO2mix | Non | Observé a posteriori | Cible et évaluation seulement | Fuite si utilisée comme entrée | Interdit |
-| Température France observée jusqu'à 13 h locale de J (3 candidates : 8 villes, 38 simple, 38 pondérée) | SYNOP, 38 stations continentales | Oui : dernière observation à 12 h UTC (hiver) ou 9 h UTC (été) ; insérées quelques minutes après leur heure d'observation (audit 2025, à confirmer sur l'historique où `insert_time` est vide) | Observé | Modèle simple, gradient boosting | Valeurs imputées : causales (voisins au même instant ou passé), paramètres appris sur 2016-2022 ; grille horaire par report, jamais d'interpolation | Vérifié par les tests anti-fuite |
-| Température observée pendant J+1 | SYNOP | Non | Observé a posteriori | Scénario « météo parfaite » seulement | Fuite en scénario opérationnel | Interdit hors plafond |
-| Heure, jour de la semaine, mois, week-end | Calendrier | Oui | Connu à l'avance | Tous les modèles | Nulle | Validé |
-| Jours fériés, ponts, vacances scolaires, période de Noël (candidate) | Calendriers publics (`holidays`, data.education.gouv.fr, Bulletin officiel pour 2015-2017) | Oui, publiés à l'avance | Connu à l'avance | Tous les modèles | Faible (décisions tardives) | Construit (`src/calendrier.py`) |
-| Autres colonnes d'éCO2mix | éCO2mix | Non | Observé | Aucune | Production ajustée à la consommation | Interdit |
-| Prévisions de consommation de RTE | éCO2mix | À vérifier | Prévu | Comparaison seulement | Instant de publication à confirmer | Exclu des variables |
+| `conso_veille_effective_MW` : consommation 24 h avant l'heure cible si H ≤ 12, sinon 48 h avant (`retard_effectif_h`) | éCO2mix | Oui : pour H ≤ 12, la tranche H du jour J est finie avant 13 h. La tranche 13 h-14 h n'est pas complète à 14 h | Observé | M1 à M4, plafond | Notre historique est la version consolidée ou définitive (voir plus bas) | Vérifié (`tests/test_features.py`, `tests/test_protocole.py`) |
+| `conso_lag48_MW`, `conso_lag168_MW` : consommation 48 h et 7 jours avant l'heure cible | éCO2mix | Oui | Observé | M1 à M4, plafond | Même limite de version | Vérifié (mêmes tests) |
+| Résidu de M1 de la veille (M4) : seulement pour H ≤ 12 ; sinon celui de l'avant-veille | éCO2mix et M1 | Oui | Observé | M4 | **Fuite corrigée le 2026-10-07** : l'heure 13 utilisait la tranche 13 h-14 h du jour J | Vérifié (`tests/test_modeles_arma.py`) |
+| `temp_38_ponderee_origine` : température France à 13 h locale le jour J | SYNOP, 38 stations continentales | Oui : dernière observation à 12 h UTC (hiver) ou 9 h UTC (été), reportée heure par heure | Observé | M2, M3, plafond | Valeurs imputées de façon causale (voisins au même instant ou passé), paramètres appris sur 2016-2022 ; jamais d'interpolation vers le futur | Vérifié (`tests/test_features.py`, `tests/test_anti_fuite_meteo.py`) |
+| `temp_38_ponderee_veille` : moyenne du jour J-1 complet | SYNOP | Oui | Observé | M2, M3, plafond | Faible | Vérifié |
+| `temp_38_ponderee_lissee` : lissage exponentiel (alpha = 0,5) des moyennes journalières, le jour J ne comptant que jusqu'à 13 h | SYNOP | Oui | Observé | M2, M3, plafond | Faible | Vérifié |
+| Degrés de chauffage et de climatisation (seuils 15 °C et 22 °C), à l'origine et lissés | Calculés à partir des lignes ci-dessus | Oui | Observé | M2, M3, plafond | Seuils fixés à l'avance (notebook 02, 2016-2022) | Vérifié |
+| Jour de la semaine, mois du jour cible | Calendrier | Oui | Connu à l'avance | Tous | Nulle | Validé |
+| `ferie`, `veille_ferie`, `lendemain_ferie`, `pont_potentiel`, `vacances_A`, `vacances_B`, `vacances_C` du jour cible | `holidays`, data.education.gouv.fr, Bulletin officiel (2015-2017) | Oui, publiés à l'avance | Connu à l'avance | Tous | Faible (décisions tardives, ex. pont décidé tard) | Validé (`src/calendrier.py`) |
+
+## Variables non utilisées ou interdites
+
+| Variable | Pourquoi |
+|---|---|
+| Consommation de J+1 | C'est la cible : utilisée seulement pour apprendre et noter |
+| Consommation du jour J après la tranche 12 h-13 h | Pas encore publiée à 14 h |
+| Température observée pendant J+1 (`*_meteo_parfaite`) | Inconnue à 14 h. Utilisée **seulement** par le plafond « météo parfaite » (`src/analyses.py`), jamais présenté comme une prévision possible ; `features.construire_dataset` refuse ces colonnes |
+| Prévision météo de J+1 | Elle existe à 14 h (Météo-France), mais nous n'avons pas son historique. C'est la principale piste d'amélioration (3 pires jours, notebook 04) |
+| `weekend`, `nb_zones_vacances`, `periode_noel` | Disponibles, mais non retenues : `weekend` est déjà contenu dans le jour de la semaine ; les deux autres n'apportent rien sur 2023 (ablation du calendrier) |
+| Autres colonnes d'éCO2mix (production, échanges) | La production s'ajuste à la consommation : ce serait une fuite indirecte |
+| Prévisions de consommation de RTE | Instant de publication non vérifié : exclues des variables |
 
 ## Les trois versions de la consommation RTE
 

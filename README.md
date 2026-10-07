@@ -60,7 +60,7 @@ src/
     temperature_france.py                                 3 températures France candidates, horaires
   calendrier.py        variables calendaires (fériés, ponts, vacances, période de Noël candidate)
   vacances.py, recuperation_vacances*.py   calendriers scolaires
-  protocole.py         règle des 14 h (conso, météo), fin de l'apprentissage ; découpage (à écrire)
+  protocole.py         règle des 14 h (conso, météo), bornes de l'apprentissage (découpage : config.py ; blocs : modeles_lineaires.py)
   features.py          table des variables connues à 14 h (dataset de modélisation)
   benchmarks.py        benchmarks sans apprentissage (B0, B1, B2)
   modeles_lineaires.py M1 : calendrier + consommation passée, un modèle par heure
@@ -94,7 +94,7 @@ pytest
 
 | # | Étape | Commande | Sortie | Coût | État |
 |---|---|---|---|---|---|
-| 1 | Tests | `pytest` | aucun appel réseau. Les tests sur les vraies données (archives SYNOP, calendriers scolaires, résultats du pipeline) sont **ignorés** tant que les étapes 2 à 4 n'ont pas été lancées : relancer `pytest` après | rapide (quelques minutes avec toutes les données) | disponible |
+| 1 | Tests | `pytest` | aucun appel réseau. Les tests sur les vraies données (archives SYNOP, calendriers scolaires, résultats du pipeline) sont **ignorés** tant que les étapes 2 à 4 n'ont pas été lancées : relancer `pytest` après | rapide (quelques minutes avec toutes les données). Les tests de `tests/test_meteo.py` lisent de gros fichiers : sur un ordinateur avec peu de mémoire libre (moins de 4 Go), ils peuvent échouer par manque de mémoire dans la suite complète ; ils passent alors lancés seuls | disponible |
 | 2 | Consommation | `python -m src.rte` | `data/donnees-preparees/rte/conso_horaire_utc.csv` | **coûteux** : téléchargement de 85 Mo (une seule fois, mis en cache) | disponible. Explications : `notebooks/01_donnees_RTE.ipynb` |
 | 3 | Météo | `python -m src.pipeline_meteo` | `data/donnees-preparees/meteo/temperatures_france_candidates_horaire_utc.csv` (3 candidates, versions opérationnelle et météo parfaite) ; étapes et journaux dans `data/donnees-traitees/meteo/` | **coûteux** : téléchargement d'environ 80 Mo (une fois), puis environ 15 min (benchmark temporel). Option `--benchmark-spatial` : environ 5 min de plus | disponible |
 | 4 | Calendrier | `python -m src.calendrier` | `data/donnees-preparees/calendrier/calendrier.csv` | rapide | disponible |
@@ -134,13 +134,15 @@ Voir `CONTRIBUTING.md` : une branche par personne et par sujet, pull request rel
 - [x] Décisions principales (`docs/decisions.md`)
 - [x] Structure du dépôt
 - [x] Données propres reproduites depuis zéro : consommation, météo (imputation causale), calendrier
-- [ ] Choix de la température France sur 2023 (3 candidates prêtes)
-- [ ] Variables à 14 h et test de non-fuite
-- [ ] Benchmarks et évaluation sur la validation 2023
-- [ ] Modèles, ablation, test de sensibilité sur 2020
-- [ ] Test final (une seule fois)
-- [ ] Audit critique
-- [ ] Rapport, README final, oral
+- [x] Exploration : relation avec la météo, effets calendaires (notebook 02)
+- [x] Benchmarks B0, B1, B2 (notebook 03)
+- [x] Variables à 14 h et test de non-fuite (`src/features.py`, `tests/test_features.py`)
+- [x] Choix sur la validation 2023 : température France, ablations, réglages de M3 et M4, décision 14, sensibilité au Covid
+- [x] Test final 2024-2025 (chronologie de son utilisation écrite dans `docs/decisions.md`)
+- [x] Comparaison sur les mêmes jours, plafond « météo parfaite », analyses par groupe, 3 pires jours (notebook 04)
+- [ ] Test bonus 2026 (une seule fois, après le rapport des résultats 2024-2025)
+- [ ] Journal de l'IA : 3 exemples chacun (`docs/journal_ia.md`)
+- [ ] Rapport (moins de 10 pages), oral (10 min)
 
 ## Usage de l'IA
 

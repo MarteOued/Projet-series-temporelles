@@ -11,7 +11,8 @@ Ce que je calcule
    Ce n'est pas une prévision possible à 14 h : il montre seulement combien on
    gagnerait avec une prévision météo parfaite. Il n'entre dans aucun choix.
 2. Décision 14 : un seul modèle linéaire pour les 24 heures contre 24 modèles
-   (un par heure), sur la validation 2023.
+   (un par heure), sur la validation 2023. Décision 9 : M1 et M2 avec et sans
+   le retrait du confinement, sur la validation 2023.
 3. Erreurs de toutes les méthodes (mêmes jours) par saison, type de jour,
    température, heure, et biais par mois.
 4. Les 3 pires jours de M2, avec ce qui s'est passé ces jours-là.
@@ -192,6 +193,23 @@ def decision_14(donnees):
     return pd.DataFrame(lignes)
 
 
+def sensibilite_covid(donnees):
+    """Décision 9 : M1 et M2 retenus, avec et sans le retrait du confinement (2023)."""
+    lignes = []
+    for exclusion in (True, False):
+        version = donnees if exclusion else donnees.assign(**{m1.COLONNE_COVID: False})
+        for nom, resultat in (
+            ("M1", m1.valider_m1_expanding(version)),
+            ("M2", m2.valider_m2_expanding(version, CANDIDAT_M2, VARIANTE_M2)),
+        ):
+            lignes.append({
+                "modele": nom,
+                "confinement_retire": exclusion,
+                **{cle: resultat.metriques[cle] for cle in ("MAE_MW", "RMSE_MW", "MAE_pointe_MW")},
+            })
+    return pd.DataFrame(lignes)
+
+
 # ===========================================================================
 # 3. Erreurs par groupe de jours (mêmes jours pour toutes les méthodes)
 # ===========================================================================
@@ -291,6 +309,9 @@ def main(argv=None):
 
     print("Décision 14 : un seul modèle contre 24 (2023)")
     _sauver(decision_14(donnees), "decision14_un_modele_contre_24_2023")
+
+    print("Décision 9 : sensibilité au retrait du confinement (2023)")
+    _sauver(sensibilite_covid(donnees), "sensibilite_covid_2023")
 
     periodes = [("validation", "2023")] + ([("test", "2024_2025")] if args.test_final else [])
     conso_h = rte.lire_prepare()
