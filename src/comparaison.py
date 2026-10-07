@@ -10,7 +10,8 @@ Utilisation
     python -m src.comparaison                 # validation 2023
     python -m src.comparaison --test-final    # + test 2024-2025 (choix déjà gelés)
 
-Les prévisions des modèles sont lues dans data/resultats (écrites par src/experiences.py).
+Les prévisions des modèles sont lues dans data/resultats (écrites par src/experiences.py,
+et par src/analyses.py pour le plafond « météo parfaite »).
 """
 
 from __future__ import annotations
@@ -29,6 +30,8 @@ MODELES = {
     "M2 : M1 + température": "m2",
     "M3 : gradient boosting": "m3",
     "M4 : M1 + ARMA": "m4",
+    # Pas une prévision possible à 14 h : la vraie température du jour cible (src/analyses.py)
+    "Plafond : M2 + météo parfaite": "plafond",
 }
 
 FICHIERS_PREDICTIONS = {
@@ -54,7 +57,10 @@ def lire_previsions_modeles(nom_periode: str) -> tuple[dict, dict]:
     for nom, code in MODELES.items():
         chemin = DOSSIER_RESULTATS / FICHIERS_PREDICTIONS[nom_periode].format(code)
         if not chemin.exists():
-            raise FileNotFoundError(f"{chemin} introuvable : lancer d'abord `python -m src.experiences`.")
+            raise FileNotFoundError(
+                f"{chemin} introuvable : lancer d'abord `python -m src.experiences` "
+                "puis `python -m src.analyses`."
+            )
         predictions = pd.read_csv(chemin)
         previsions[nom] = tableau_jour_heure(predictions)
         cibles[nom] = tableau_jour_heure(predictions, "consommation_cible_MW")
