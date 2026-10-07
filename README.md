@@ -68,6 +68,7 @@ src/
   modeles_hgbr.py      M3 : gradient boosting
   modeles_arma.py      M4 : M1 + correction ARMA de ses erreurs ; evaluation_finale_m4.py
   experiences.py       refait tous les fichiers de data/resultats
+  comparaison.py       benchmarks et modèles notés sur les mêmes jours
   evaluation.py        MAE, RMSE, MAPE, biais, total du jour, pointe, heure de pointe
 tests/                 tests automatiques, dont le test de non-fuite
 docs/                  décisions, protocole, disponibilité des variables, journal de l'IA
@@ -100,6 +101,7 @@ pytest
 | 6 | Benchmarks | `python -m src.benchmarks` | scores B0, B1 et B2 (apprentissage, validation) ; explications : `notebooks/03_benchmarks.ipynb` | rapide (quelques secondes) | disponible |
 | 7 | Choix sur la validation 2023 | `python -m src.experiences` | `data/resultats/` : ablations de M1 (retards, calendrier), course des températures et variantes de M2, grilles de M3 et M4 | **coûteux** : environ 15 min | disponible |
 | 8 | Test final 2024-2025 | `python -m src.experiences --test-final` | `data/resultats/` : prévisions et scores des configurations **gelées** (reproduction, aucun choix n'en dépend) | **coûteux** : environ 30 min au total, réestimation mensuelle | disponible |
+| 9 | Comparaison sur les mêmes jours | `python -m src.comparaison` (2023) ; `--test-final` (+ 2024-2025) | `data/resultats/comparaison_*.csv` : B0, B1, B2 et M1 à M4 notés sur les jours où toutes les méthodes ont leurs 24 heures | rapide | disponible |
 
 ## Notebooks
 

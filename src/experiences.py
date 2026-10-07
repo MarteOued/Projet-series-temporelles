@@ -138,6 +138,12 @@ def _ligne_metriques(resultat_metriques: dict, n_predictions: int) -> dict:
     return ligne
 
 
+def _sauver_predictions_validation(predictions: pd.DataFrame, modele: str) -> None:
+    """Prévisions 2023 de la configuration retenue (pour la comparaison aux benchmarks)."""
+    colonnes = [m1.COLONNE_JOUR, m1.COLONNE_HEURE, m1.COLONNE_CIBLE, "prediction_MW", "bloc_validation"]
+    _sauver(predictions[colonnes], f"predictions_validation_{modele}_2023")
+
+
 def _sauver(tableau: pd.DataFrame, nom: str) -> None:
     chemin = DOSSIER_RESULTATS / f"{nom}.csv"
     chemin.parent.mkdir(parents=True, exist_ok=True)
@@ -208,7 +214,9 @@ def ablation_m2(donnees: pd.DataFrame) -> None:
     ablation = m2.comparer_ablations_m2(donnees)
 
     # Gain de chaque variante par rapport à M1 (positif = M2 fait mieux)
-    reference = m1.valider_m1_expanding(donnees).metriques
+    validation_m1 = m1.valider_m1_expanding(donnees)
+    _sauver_predictions_validation(validation_m1.predictions, "m1")
+    reference = validation_m1.metriques
     tableau = ablation.tableau.copy()
     for mesure in ("MAE", "RMSE"):
         gain = reference[f"{mesure}_MW"] - tableau[f"{mesure}_MW"]
@@ -220,6 +228,11 @@ def ablation_m2(donnees: pd.DataFrame) -> None:
                    "gain_RMSE_vs_M1_MW", "gain_RMSE_vs_M1_pct"]],
         "ablation_m2_2023",
     )
+
+    # Configuration retenue = la meilleure MAE 2023 (première ligne du tableau)
+    meilleure = tableau.sort_values("MAE_MW").iloc[0]
+    retenue = ablation.resultats[(meilleure["candidat_temperature"], meilleure["variante_meteo"])]
+    _sauver_predictions_validation(retenue.predictions, "m2")
 
     trimestres, heures = [], []
     for (candidat, variante), resultat in ablation.resultats.items():
@@ -252,24 +265,28 @@ GRILLE_M3 = {
 
 def selection_m3(donnees: pd.DataFrame) -> None:
     print("Grille de M3 (2023)")
-    lignes = []
+    lignes, predictions = [], {}
     for nom, parametres in GRILLE_M3.items():
         print(f"  {nom} ...")
         resultat = m3.valider_m3_expanding(donnees, **parametres)
+        predictions[nom] = resultat.predictions
         lignes.append({
             "configuration": nom,
             **parametres,
             **{cle: resultat.metriques[cle] for cle in COLONNES_METRIQUES[:-1]},
         })
-    _sauver(pd.DataFrame(lignes).sort_values("MAE_MW"), "selection_m3_validation_2023")
+    tableau = pd.DataFrame(lignes).sort_values("MAE_MW")
+    _sauver(tableau, "selection_m3_validation_2023")
+    _sauver_predictions_validation(predictions[tableau["configuration"].iloc[0]], "m3")
 
 
 def selection_m4(donnees: pd.DataFrame) -> None:
     print("Grille de M4 (2023)")
-    lignes = []
+    lignes, predictions = [], {}
     for nom, (p, q) in m4.GRILLE_M4.items():
         print(f"  {nom} ...")
         resultat = m4.valider_m4_expanding(donnees, nom)
+        predictions[nom] = resultat.predictions
         lignes.append({
             "configuration": nom,
             "p": p,
@@ -277,7 +294,9 @@ def selection_m4(donnees: pd.DataFrame) -> None:
             **{cle: resultat.metriques[cle] for cle in COLONNES_METRIQUES[:-1]},
             "nb_observations": len(resultat.predictions),
         })
-    _sauver(pd.DataFrame(lignes).sort_values("MAE_MW"), "selection_m4_validation_2023")
+    tableau = pd.DataFrame(lignes).sort_values("MAE_MW")
+    _sauver(tableau, "selection_m4_validation_2023")
+    _sauver_predictions_validation(predictions[tableau["configuration"].iloc[0]], "m4")
 
 
 # ===========================================================================

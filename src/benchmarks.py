@@ -146,13 +146,17 @@ def jours_de_la_periode(nom_periode):
     return pd.date_range(debut, fin, freq="D")
 
 
-def evaluer_periode(nom_periode, conso_h=None):
+def evaluer_periode(nom_periode, conso_h=None, test_final=False):
     """Calcule B0, B1 et B2 sur une période et renvoie (scores, vraies valeurs, prévisions).
 
     Les jours de changement d'heure sont retirés de la notation (piste de la décision 11) :
     ils n'ont pas 24 heures, on ne peut donc pas les comparer heure par heure.
+
+    Le test 2024-2025 n'est calculé qu'avec test_final=True : seulement pour la comparaison
+    finale (src/comparaison.py), une fois tous les choix gelés. Les benchmarks n'ont aucun
+    réglage, donc le test ne peut rien influencer ici, mais je garde la protection.
     """
-    if nom_periode == "test":
+    if nom_periode == "test" and not test_final:
         raise ValueError("Le test 2024-2025 ne s'utilise qu'une fois, à la fin, après gel des choix.")
 
     conso_h = rte.lire_prepare() if conso_h is None else conso_h

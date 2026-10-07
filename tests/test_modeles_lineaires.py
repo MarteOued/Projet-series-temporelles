@@ -1857,3 +1857,19 @@ def test_periode_autorisee_inconnue_refusee():
             "2023-01-03",
             periodes_autorisees={"apprentissage", "inconnue"},
         )
+
+
+def test_compteur_dst_quand_le_dataset_les_a_deja_retires():
+    # Le dataset ne contient déjà plus les jours de changement d'heure :
+    # le compteur doit quand même dire combien de jours ne sont pas notés.
+    jours = pd.date_range("2024-01-01", "2024-12-31", freq="D")
+    jours = jours[~jours.isin(modeles_lineaires.jours_changement_heure_paris(2024, 2024))]
+    predictions = pd.DataFrame({
+        "jour_cible": jours.repeat(24),
+        "heure_cible": list(range(24)) * len(jours),
+        "consommation_cible_MW": 50_000.0,
+        "prediction_MW": 50_010.0,
+    })
+    metriques = modeles_lineaires.calculer_metriques_finales(predictions)
+    assert metriques["nb_jours_dst_exclus"] == 2
+    assert metriques["nb_jours_complets"] == 364

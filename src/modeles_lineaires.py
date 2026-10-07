@@ -1015,28 +1015,26 @@ def calculer_metriques_finales(
         )
     )
 
-    jours_total = set(
-        _normaliser_jour(
-            predictions[
-                COLONNE_JOUR
-            ]
-        )
+    # Jours de changement d'heure de la période couverte : ils ne sont jamais
+    # notés, qu'ils aient été retirés dès la construction du dataset
+    # (features.construire_dataset) ou par le filtre ci-dessus.
+    jours = _normaliser_jour(
+        predictions[
+            COLONNE_JOUR
+        ]
     )
 
-    jours_evalues = set(
-        _normaliser_jour(
-            predictions_evaluees[
-                COLONNE_JOUR
-            ]
-        )
+    jours_dst = jours_changement_heure_paris(
+        int(jours.dt.year.min()),
+        int(jours.dt.year.max()),
     )
 
     metriques[
         "nb_jours_dst_exclus"
     ] = int(
-        len(
-            jours_total
-            - jours_evalues
+        sum(
+            jours.min() <= jour <= jours.max()
+            for jour in jours_dst
         )
     )
 
