@@ -61,3 +61,20 @@ def test_les_variables_du_plafond_ne_sont_pas_dans_le_modele_deployable():
 def test_saisons():
     assert analyses.SAISONS[1] == "hiver" and analyses.SAISONS[7] == "été"
     assert len(analyses.SAISONS) == 12
+
+
+def test_significativite_compare_la_reference_a_chaque_methode():
+    rng = np.random.default_rng(3)
+    jours = pd.date_range("2024-01-01", periods=200, freq="D")
+    reel = pd.DataFrame(50_000 + rng.normal(0, 1_000, (200, 24)), index=jours, columns=range(24))
+    previsions = {
+        "M2 : M1 + température": reel + rng.normal(0, 500, (200, 24)),
+        "pareil": reel + rng.normal(0, 500, (200, 24)),
+        "moins bon": reel + rng.normal(0, 3_000, (200, 24)),
+    }
+    t = analyses.significativite(reel, previsions)
+    assert set(t["autre_methode"]) == {"pareil", "moins bon"}
+    assert set(t["perte"]) == {"MAE", "RMSE"}
+    conclusions = t.set_index(["autre_methode", "perte"])["conclusion"]
+    assert conclusions[("moins bon", "MAE")] == "référence meilleure"
+    assert conclusions[("pareil", "MAE")] == "écart non significatif"
