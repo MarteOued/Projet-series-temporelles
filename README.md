@@ -120,6 +120,7 @@ du projet (`.venv`), pas avec un autre Python installé sur la machine (Anaconda
 | `01_donnees_RTE` | préparation de la consommation, disponibilité à 14 h |
 | `02_relation_conso_meteo_calendrier` | relation consommation-température, effets calendaires (2016-2022) |
 | `03_benchmarks` | benchmarks B0, B1, B2 et mesures d'erreur |
+| `04_resultats_modeles` | tous les résultats : comparaison sur les mêmes jours, biais, ablations, décision 14, réglages de M3 et M4, erreurs par saison, type de jour, température et heure, 3 pires jours, stabilité, limites. Lit `data/resultats/` (aucun calcul de modèle) |
 | `exploration_meteo` | réseau des 40 stations météo |
 | `exploration_calendrier` | variables calendaires |
 
