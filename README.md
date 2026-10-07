@@ -61,15 +61,19 @@ src/
   calendrier.py        variables calendaires (fériés, ponts, vacances, période de Noël candidate)
   vacances.py, recuperation_vacances*.py   calendriers scolaires
   protocole.py         règle des 14 h (conso, météo), fin de l'apprentissage ; découpage (à écrire)
-  features.py          variables construites à 14 h, sans fuite                 (à écrire)
+  features.py          table des variables connues à 14 h (dataset de modélisation)
   benchmarks.py        benchmarks sans apprentissage (B0, B1, B2)
-  modeles_lineaires.py régressions linéaires                                    (à écrire)
-  modeles_ml.py        gradient boosting et météo parfaite                      (à écrire)
+  modeles_lineaires.py M1 : calendrier + consommation passée, un modèle par heure
+  modeles_meteo.py     M2 : M1 + température (course des 3 températures, variantes)
+  modeles_hgbr.py      M3 : gradient boosting
+  modeles_arma.py      M4 : M1 + correction ARMA de ses erreurs ; evaluation_finale_m4.py
+  experiences.py       refait tous les fichiers de data/resultats
   evaluation.py        MAE, RMSE, MAPE, biais, total du jour, pointe, heure de pointe
 tests/                 tests automatiques, dont le test de non-fuite
 docs/                  décisions, protocole, disponibilité des variables, journal de l'IA
 notebooks/             notebooks Colab (enveloppes autour de src/)
 data/                  donnees-brutes/, interim/, donnees-traitees/, donnees-preparees/ : non versionnés
+                       resultats/ : scores et prévisions des modèles (versionnés, refaits par experiences.py)
 report/                tables/ et figures/
 ```
 
@@ -92,9 +96,10 @@ pytest
 | 2 | Consommation | `python -m src.rte` | `data/donnees-preparees/rte/conso_horaire_utc.csv` | **coûteux** : téléchargement de 85 Mo (une seule fois, mis en cache) | disponible. Explications : `notebooks/01_donnees_RTE.ipynb` |
 | 3 | Météo | `python -m src.pipeline_meteo` | `data/donnees-preparees/meteo/temperatures_france_candidates_horaire_utc.csv` (3 candidates, versions opérationnelle et météo parfaite) ; étapes et journaux dans `data/donnees-traitees/meteo/` | **coûteux** : téléchargement d'environ 80 Mo (une fois), puis environ 15 min (benchmark temporel). Option `--benchmark-spatial` : environ 5 min de plus | disponible |
 | 4 | Calendrier | `python -m src.calendrier` | `data/donnees-preparees/calendrier/calendrier.csv` | rapide | disponible |
-| 5 | Variables à 14 h et test de non-fuite | à définir | | | à écrire |
+| 5 | Variables à 14 h | `python -m src.features` | `data/donnees-preparees/dataset_modelisation_2016_2025.csv` (87 192 lignes : une par jour cible et par heure, jours de changement d'heure exclus) | environ 2 min | disponible |
 | 6 | Benchmarks | `python -m src.benchmarks` | scores B0, B1 et B2 (apprentissage, validation) ; explications : `notebooks/03_benchmarks.ipynb` | rapide (quelques secondes) | disponible |
-| 7 | Modèles, évaluation | à définir | tables et figures dans `report/` | **coûteux** : réestimation mensuelle | à écrire |
+| 7 | Choix sur la validation 2023 | `python -m src.experiences` | `data/resultats/` : ablations de M1 (retards, calendrier), course des températures et variantes de M2, grilles de M3 et M4 | **coûteux** : environ 15 min | disponible |
+| 8 | Test final 2024-2025 | `python -m src.experiences --test-final` | `data/resultats/` : prévisions et scores des configurations **gelées** (reproduction, aucun choix n'en dépend) | **coûteux** : environ 30 min au total, réestimation mensuelle | disponible |
 
 ## Notebooks
 
