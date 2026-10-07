@@ -5,7 +5,7 @@
 | | Martino | Khadim | Les deux |
 |---|---|---|---|
 | Domaine | Consommation et modèles de référence | Météo, calendrier et modèle élaboré | Protocole et évaluation |
-| Fichiers | `src/rte.py`, `src/benchmarks.py`, `src/modeles_lineaires.py` | `src/meteo.py`, `src/calendrier.py`, `src/modeles_ml.py` | `src/config.py`, `src/protocole.py`, `src/features.py`, `src/evaluation.py`, `docs/`, rapport, oral |
+| Fichiers | `src/rte.py`, `src/benchmarks.py`, `src/evaluation.py`, `src/comparaison.py`, `src/analyses.py` | chaîne météo (`src/meteo.py` ... `src/temperature_france.py`), `src/calendrier.py`, `src/modeles_lineaires.py`, `src/modeles_meteo.py`, `src/modeles_hgbr.py`, `src/modeles_arma.py` | `src/config.py`, `src/protocole.py`, `src/features.py`, `src/experiences.py`, `docs/`, rapport, oral |
 
 ## Git
 
@@ -14,11 +14,15 @@
 - Le code réutilisable va dans `src/`. Les notebooks ne font que l'appeler.
 - On fusionne dans `main` par une pull request **relue par l'autre**. On ne valide jamais sa propre pull request.
   Celui qui relit lance le code avant de valider.
-- Avant de commiter un notebook : `Edit > Clear all outputs`.
+- Un notebook est commité **avec ses sorties**, après l'avoir relancé en entier avec le Python du projet
+  (`.venv/Scripts/python -m nbconvert --to notebook --execute --inplace notebooks/<nom>.ipynb`) : le
+  correcteur voit ainsi les résultats sans relancer les calculs. Les commentaires sont relus face aux sorties.
 - Pas de `git push --force` sur une branche partagée.
 - Ne jamais commiter de mot de passe, de jeton ou de clé.
 - Les données ne sont pas versionnées. Elles se retéléchargent avec les scripts ; le Drive partagé sert de sauvegarde
-  et pour échanger les gros fichiers.
+  et pour échanger les gros fichiers. Exception : `data/resultats/` (scores et prévisions des modèles) est versionné,
+  et chaque fichier doit être produit par une commande du dépôt (`src/experiences.py`, `src/analyses.py`,
+  `src/comparaison.py`), jamais à la main ni depuis un notebook.
 
 ## Commandes
 
@@ -41,7 +45,8 @@ On modifie la valeur dans `src/config.py` **et** on ajoute une ligne à l'histor
 
 - [ ] Le code tourne depuis zéro (les données se retéléchargent).
 - [ ] Aucune variable ne dépend d'une information postérieure à 14 h.
-- [ ] Le test final (2024-2025) n'a pas été utilisé.
+- [ ] Le test final (2024-2025) n'a pas été utilisé pour choisir ou régler quoi que ce soit
+  (seulement reproduit avec `--test-final`, ou relancé pour corriger une erreur notée dans `docs/decisions.md`).
 - [ ] `pytest` passe.
 - [ ] `docs/decisions.md` est à jour.
 - [ ] `docs/journal_ia.md` est à jour s'il y a eu un usage notable de l'IA.
@@ -50,11 +55,9 @@ On modifie la valeur dans `src/config.py` **et** on ajoute une ligne à l'histor
 
 | Notebook | Responsable |
 |---|---|
-| `00_demarrage_colab` | tous |
-| `01_exploration_rte_martino` | Martino |
-| `01_meteo_calendrier_khadim` | Khadim (un seul notebook pour l'exploration météo et calendrier) |
-| `02_preparation` | à deux (pull request relue par l'autre) |
-| `03_benchmarks_martino` | Martino |
-| `04_modele_simple_martino` | Martino |
-| `04_modele_ml_khadim` | Khadim |
-| `05_evaluation` | à deux (pull request relue par l'autre) |
+| `01_donnees_RTE` | Martino |
+| `02_relation_conso_meteo_calendrier` | Martino |
+| `03_benchmarks` | Martino |
+| `04_resultats_modeles` | à deux (pull request relue par l'autre) |
+| `exploration_meteo` | Khadim |
+| `exploration_calendrier` | Khadim |
