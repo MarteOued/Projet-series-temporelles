@@ -113,10 +113,13 @@ pytest
 ## Tableau de bord
 
 Une visite guidée des résultats, écrite pour être comprise par tout le monde (pas seulement par des
-spécialistes) : le problème en une image, les données, un jour au choix (réalité contre prévisions),
-le classement des méthodes et ce qui est significatif, les erreurs par saison, type de jour,
-température et heure, les pires journées expliquées, le biais, les choix faits sur 2023, les limites
-et un lexique.
+spécialistes), en 12 pages : le projet en bref, la méthode (règle des 14 h, périodes, chemin des
+données, tests anti-fuite), les données, **une fiche par modèle** (ce qu'il sait à 14 h, comment il
+apprend, le réglage choisi sur 2023, ses résultats, ses forces et ses limites), un jour au choix avec
+le calendrier des erreurs, le classement et sa significativité, les erreurs par saison, température,
+type de jour, heure et mois, les pires journées expliquées, le biais, les choix faits sur 2023, les
+limites, les commandes pour tout reproduire et un lexique. Les couleurs des méthodes sont fixes et
+validées pour les daltoniens (`app/composants.py`), les textes sont dans `app/contenu.py`.
 
 ```bash
 streamlit run app/tableau_de_bord.py
