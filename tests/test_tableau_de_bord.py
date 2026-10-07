@@ -11,8 +11,8 @@ FICHIER = RACINE / "data" / "resultats" / "visualisation_previsions.csv"
 
 pytestmark = pytest.mark.skipif(not FICHIER.exists(), reason="lancer d'abord python -m src.visualisation")
 
-PAGES = ["page_accueil", "page_donnees", "page_jour", "page_classement", "page_echecs",
-         "page_biais", "page_choix", "page_limites", "page_lexique"]
+PAGES = ["page_accueil", "page_methode", "page_donnees", "page_modeles", "page_jour", "page_classement",
+         "page_echecs", "page_biais", "page_choix", "page_limites", "page_reproduire", "page_lexique"]
 
 
 def lancer_page(nom_page, racine):

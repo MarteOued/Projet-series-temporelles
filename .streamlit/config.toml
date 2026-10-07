@@ -1,0 +1,11 @@
+# Thème du tableau de bord (app/tableau_de_bord.py) : clair, sobre, bleu principal.
+[theme]
+base = "light"
+primaryColor = "#2a78d6"
+backgroundColor = "#f9f9f7"
+secondaryBackgroundColor = "#efeee9"
+textColor = "#0b0b0b"
+font = "sans serif"
+
+[browser]
+gatherUsageStats = false
