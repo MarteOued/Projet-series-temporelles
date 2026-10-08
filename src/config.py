@@ -8,6 +8,7 @@ par l'autre membre du groupe.
 """
 
 import datetime as dt
+import os
 from pathlib import Path
 
 
@@ -17,15 +18,25 @@ from pathlib import Path
 
 RACINE = Path(__file__).resolve().parent.parent
 
-# donnees-brutes : fichiers téléchargés, jamais modifiés à la main
+# Mode « test bonus » (décision 3) : activé seulement par src/test_bonus.py, avec
+# la variable d'environnement PROJET_TEST_BONUS=1. Les mêmes scripts traitent alors
+# les données jusqu'au 30 juin 2026, mais écrivent dans des sous-dossiers
+# « test_bonus » : les fichiers du projet (jusqu'au 31 décembre 2025) ne sont
+# jamais modifiés.
+MODE_TEST_BONUS = os.environ.get("PROJET_TEST_BONUS") == "1"
+_SOUS_DOSSIER = "test_bonus" if MODE_TEST_BONUS else ""
+
+# donnees-brutes : fichiers téléchargés, jamais modifiés à la main (communs aux deux modes)
 # interim : fichiers intermédiaires (étapes de travail)
 # donnees-preparees : fichiers propres, prêts pour les modèles
 DATA_BRUTES = RACINE / "data" / "donnees-brutes"
-DATA_INTERIM = RACINE / "data" / "interim"
-DATA_PREPAREES = RACINE / "data" / "donnees-preparees"
+DATA_PREPAREES_PROJET = RACINE / "data" / "donnees-preparees"
+DATA_PREPAREES_BONUS = DATA_PREPAREES_PROJET / "test_bonus"
+DATA_INTERIM = RACINE / "data" / "interim" / _SOUS_DOSSIER
+DATA_PREPAREES = DATA_PREPAREES_BONUS if MODE_TEST_BONUS else DATA_PREPAREES_PROJET
 # donnees-traitees : étapes de traitement de la météo (matrices, journaux,
 # diagnostics). Non versionné : tout se reconstruit avec python -m src.pipeline_meteo
-DATA_TRAITEES = RACINE / "data" / "donnees-traitees"
+DATA_TRAITEES = RACINE / "data" / "donnees-traitees" / _SOUS_DOSSIER
 DOSSIER_METEO_BRUT = DATA_BRUTES / "meteo"
 DOSSIER_METEO_TRAITE = DATA_TRAITEES / "meteo"
 
@@ -72,7 +83,14 @@ HORIZON_MAX = 33
 # Décembre 2015 sert de marge historique pour construire certains
 # retards avant le début de la période d'apprentissage.
 DATA_DEBUT = dt.date(2015, 12, 1)
-DATA_FIN = dt.date(2025, 12, 31)
+# Fin des données du projet (décision 1). En mode test bonus seulement, les
+# données vont jusqu'à la fin du test bonus (voir TEST_BONUS plus bas).
+DATA_FIN_PROJET = dt.date(2025, 12, 31)
+
+# Années sur lesquelles la liste des stations SYNOP a été choisie (décision 7) :
+# une station est gardée si elle est présente chaque année de 2015 à 2025. La
+# liste est figée : les données de 2026 du test bonus ne la modifient pas.
+ANNEES_SELECTION_STATIONS = (2015, 2025)
 
 # Découpage défini sur les jours cibles J+1.
 #
@@ -100,12 +118,14 @@ DECOUPAGE = {
 
 # Test bonus (décision 3) : janvier à juin 2026, données consolidées.
 # Utilisé UNE SEULE FOIS, après le test final 2024-2025, résultats présentés à
-# part. Il ne sert jamais à choisir ou régler quoi que ce soit. Les données de
-# 2026 seront chargées seulement à ce moment-là (DATA_FIN reste fin 2025).
+# part (src/test_bonus.py). Il ne sert jamais à choisir ou régler quoi que ce
+# soit : les configurations des modèles sont celles gelées pour 2024-2025.
 TEST_BONUS = (
     dt.date(2026, 1, 1),
     dt.date(2026, 6, 30),
 )
+
+DATA_FIN = TEST_BONUS[1] if MODE_TEST_BONUS else DATA_FIN_PROJET
 
 
 # =============================================================================

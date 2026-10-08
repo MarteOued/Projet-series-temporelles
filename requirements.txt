@@ -19,3 +19,5 @@ shapely==2.1.2
 pytest==9.1.1
 # Optionnel : gradient boosting plus rapide si le temps de calcul devient trop long
 # lightgbm
+streamlit==1.65.0
+plotly==7.1.0

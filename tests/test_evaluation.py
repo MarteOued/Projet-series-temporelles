@@ -56,3 +56,27 @@ def test_comparaison_sur_les_memes_jours():
     incomplet.iloc[1, 5] = np.nan                  # il manque une heure le 2e jour
     scores = evaluation.comparer(reel, {"A": complet, "B": incomplet})
     assert scores.loc["nb_jours"].tolist() == [2, 2]  # le 2e jour est retiré pour TOUTES les méthodes
+
+
+def test_diebold_mariano_detecte_un_vrai_ecart():
+    rng = np.random.default_rng(0)
+    a = 1000 + rng.normal(0, 100, 500)
+    b = a + 200 + rng.normal(0, 50, 500)          # B se trompe toujours de 200 MW de plus
+    resultat = evaluation.diebold_mariano(a, b)
+    assert resultat["ecart_moyen"] == pytest.approx(-200, abs=10)
+    assert resultat["p_valeur"] < 0.001
+    assert resultat["part_jours_A_meilleure"] > 0.99
+
+
+def test_diebold_mariano_egalite():
+    rng = np.random.default_rng(1)
+    a = 1000 + rng.normal(0, 100, 500)
+    b = 1000 + rng.normal(0, 100, 500)            # deux méthodes équivalentes
+    assert evaluation.diebold_mariano(a, b)["p_valeur"] > 0.05
+
+
+def test_diebold_mariano_symetrique():
+    rng = np.random.default_rng(2)
+    a, b = rng.normal(0, 1, 100), rng.normal(0.3, 1, 100)
+    ab, ba = evaluation.diebold_mariano(a, b), evaluation.diebold_mariano(b, a)
+    assert ab["z"] == pytest.approx(-ba["z"]) and ab["p_valeur"] == pytest.approx(ba["p_valeur"])

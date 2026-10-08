@@ -71,7 +71,8 @@ def selectionner(brut, debut=config.DATA_DEBUT, fin=config.DATA_FIN):
     """Garde la consommation de la France, de `debut` à `fin` (dates de Paris, incluses).
 
     - Colonnes : la consommation et ses repères (voir COLONNES_GARDEES).
-    - Période : par défaut du 1er décembre 2015 au 31 décembre 2025. Décembre 2015 sert
+    - Période : par défaut du 1er décembre 2015 au 31 décembre 2025 (30 juin 2026 en mode
+      test bonus, voir config.py). Décembre 2015 sert
       seulement de marge pour calculer les retards (jusqu'à 28 jours) des premiers jours de 2016.
     - Lignes : celles où la consommation est remplie (les lignes :15 et :45 sont toujours vides).
     """

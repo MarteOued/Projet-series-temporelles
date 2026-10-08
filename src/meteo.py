@@ -13,7 +13,7 @@ Les fichiers bruts sont conservés sans modification dans :
     data/donnees-brutes/meteo/
 
 Période du projet :
-    décembre 2015 -> décembre 2025
+    décembre 2015 -> décembre 2025 (juin 2026 en mode test bonus, voir config.py)
 
 Important
 ---------
@@ -27,6 +27,7 @@ géographique de 100 mètres est appliquée après projection en Lambert-93
 afin de ne pas exclure artificiellement certaines stations littorales.
 """
 
+import functools
 import json
 from pathlib import Path
 
@@ -357,8 +358,12 @@ def chemin_archive_synop(annee):
     )
 
 
-def lire_archive_synop(annee):
+def lire_archive_synop(annee, colonnes=None):
     """Lit une archive annuelle SYNOP.
+
+    colonnes : liste des colonnes à lire (toutes par défaut). Une archive compte
+    une soixantaine de colonnes et plus d'un million de lignes : ne lire que les
+    colonnes utiles économise beaucoup de mémoire.
 
     Le séparateur des fichiers SYNOP est le point-virgule.
 
@@ -386,6 +391,7 @@ def lire_archive_synop(annee):
         dtype={
             "geo_id_wmo": "string",
         },
+        usecols=colonnes,
         low_memory=False,
     )
 
@@ -417,8 +423,14 @@ def lire_archive_synop(annee):
 # STATIONS PRESENTES DANS LES ARCHIVES
 # =============================================================================
 
-def stations_par_annee():
+# Colonnes nécessaires pour savoir quelles stations sont présentes chaque année
+COLONNES_STATIONS = ["geo_id_wmo", "name", "lat", "lon"]
+
+
+def stations_par_annee(annees=None):
     """Retourne les stations observées dans chaque archive annuelle.
+
+    annees : (première, dernière) ; par défaut toute la période des données.
 
     Returns
     -------
@@ -428,13 +440,16 @@ def stations_par_annee():
 
     resultats = []
 
+    premiere, derniere = annees or (ANNEE_DEBUT, ANNEE_FIN)
+
     for annee in range(
-        ANNEE_DEBUT,
-        ANNEE_FIN + 1,
+        premiere,
+        derniere + 1,
     ):
 
         donnees = lire_archive_synop(
-            annee
+            annee,
+            colonnes=COLONNES_STATIONS,
         )
 
         colonnes = [
@@ -468,11 +483,18 @@ def stations_par_annee():
 
 
 def stations_stables():
+    """Stations présentes chaque année de config.ANNEES_SELECTION_STATIONS (copie)."""
+    return _stations_stables().copy()
+
+
+@functools.lru_cache(maxsize=1)
+def _stations_stables():
     """Identifie les stations présentes chaque année du projet.
 
     Une station est considérée comme stable si son code OMM apparaît
-    dans chacune des archives annuelles comprises entre ANNEE_DEBUT
-    et ANNEE_FIN.
+    dans chacune des archives annuelles de config.ANNEES_SELECTION_STATIONS
+    (2015 à 2025, décision 7). La liste est figée : les années ajoutées
+    ensuite (2026, test bonus) ne la changent pas.
 
     Aucun critère de taux de valeurs manquantes n'est appliqué ici.
 
@@ -488,11 +510,13 @@ def stations_stables():
         - nb_annees
     """
 
-    donnees = stations_par_annee()
+    premiere, derniere = config.ANNEES_SELECTION_STATIONS
+
+    donnees = stations_par_annee((premiere, derniere))
 
     nombre_annees_attendu = (
-        ANNEE_FIN
-        - ANNEE_DEBUT
+        derniere
+        - premiere
         + 1
     )
 
