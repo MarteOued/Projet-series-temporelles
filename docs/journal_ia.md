@@ -31,7 +31,38 @@ Chacun doit pouvoir tout expliquer à l'oral.
 
 ## Les trois exemples exigés dans le rapport
 
-Brouillons à relire et à reformuler par le groupe.
+Pour chaque exemple : la tâche demandée, la proposition obtenue, la décision prise, la méthode de
+vérification. Chacun de nous présente ses trois exemples.
+
+### Martine
+
+1. **Proposition conservée après vérification : le test de non-fuite de la table des variables.**
+   *Tâche* : prouver qu'aucune variable de `src/features.py` n'utilise une information postérieure à
+   14 h. *Proposition* : construire les variables d'un jour, remplacer par des valeurs absurdes tout
+   ce qui suit 14 h (consommation après la tranche 12 h-13 h, météo après 13 h), reconstruire, et
+   exiger des variables identiques. *Décision* : gardée. *Vérification* : deux fausses fuites
+   introduites exprès dans le code. La première fausse fuite météo n'était **pas** détectée : elle
+   avait été placée dans une fonction que le calcul réel n'utilise pas. Placée au bon endroit, elle
+   est attrapée, comme la fausse fuite sur la consommation. Le test prouve donc vraiment quelque chose.
+2. **Proposition rejetée : prolonger toute la période du projet jusqu'au 30 juin 2026.** *Tâche* :
+   préparer le test bonus de 2026. *Proposition* : étendre la date de fin des données de tout le
+   projet. *Décision* : rejetée par Martine, car contraire à la décision 1 (période du projet
+   2015-2025). Les données de 2026 sont rangées à part, dans un mode « test bonus ». *Vérification* :
+   après ce changement, les fichiers 2016-2025 sont redevenus identiques à l'octet près, et le test
+   bonus redonne exactement les mêmes résultats.
+3. **Erreur détectée : des commentaires écrits avant de voir les résultats.** *Tâche* : commenter le
+   notebook 04 des résultats. *Proposition* : des commentaires rédigés à l'avance, dont « le
+   classement est le même en 2024 et en 2025 » et « 2,5 fois moins d'erreur que le meilleur
+   benchmark ». *Décision* : corrigés. *Vérification* : relus face aux sorties réelles. M1 et M4,
+   ainsi que B0 et B1, s'inversent entre 2024 et 2025, et le rapport est de 2,4. Autre erreur du même
+   type, trouvée en vérifiant : une explication de l'échec de M4 (« il apprend sur des erreurs plus
+   petites que les vraies ») a été mesurée puis rejetée (écart-type 2 271 MW contre 2 063 MW).
+
+### Khadim
+
+À compléter par Khadim : trois exemples de son propre usage de l'IA, avec la même structure.
+
+### Autres exemples (notebook RTE, 3 octobre)
 
 1. **Proposition conservée après vérification** : la règle des « lignes fantômes » des jours de
    passage à l'heure d'été. *Tâche* : supprimer les doublons d'instants UTC. *Proposition* :
@@ -49,8 +80,6 @@ Brouillons à relire et à reformuler par le groupe.
    de février ; le confinement de 2020 était annoncé parmi les jours les plus atypiques, alors
    que la méthode (écart à la médiane du mois) ne peut pas le détecter. *Décision* : commentaires
    réécrits d'après les sorties réelles. *Vérification* : lecture des sorties et des graphiques.
-
-Pour chaque exemple : la tâche demandée, la proposition obtenue, la décision prise, la méthode de vérification.
 
 ## Corrections de la météo et du calendrier (branche `khadim/corrections-meteo`)
 

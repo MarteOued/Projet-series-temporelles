@@ -62,11 +62,9 @@ HEURE_ORIGINE = 14
 # pas considérée comme complètement disponible à 14 h.
 DERNIERE_HEURE_CONSO_CONNUE = 12
 
-# Pour la météo, on utilisera uniquement les observations dont
-# l'heure locale est <= 13 h.
-#
-# Cette règle devra être vérifiée lors de l'étude détaillée de la
-# disponibilité des données SYNOP.
+# Pour la météo, on utilise uniquement les observations dont l'heure
+# locale est <= 13 h (décision 6). Appliqué par protocole.limite_meteo_connue ;
+# l'audit 2025 montre des observations publiées quelques minutes après leur heure.
 DERNIERE_HEURE_METEO_LOCALE = 13
 
 # À 14 h le jour J, les 24 heures du jour J+1 correspondent
@@ -137,9 +135,10 @@ DATA_FIN = TEST_BONUS[1] if MODE_TEST_BONUS else DATA_FIN_PROJET
 # Les valeurs observées pendant cette période restent disponibles
 # comme historique pour calculer des retards.
 #
-# Cette décision devra faire l'objet d'une analyse de sensibilité
-# sur la validation avant d'être considérée comme définitivement
-# justifiée.
+# Analyse de sensibilité faite le 2026-10-07, après le gel des choix
+# (data/resultats/sensibilite_covid_2023.csv) : garder ces jours aurait été
+# meilleur sur 2023. La décision est maintenue, car le test avait déjà été vu
+# (décision 9).
 EXCLUSION_COVID = (
     dt.date(2020, 3, 17),
     dt.date(2020, 5, 17),
@@ -150,9 +149,11 @@ EXCLUSION_COVID = (
 # RÉESTIMATION DES MODÈLES
 # =============================================================================
 
-# Réestimation mensuelle avec fenêtre croissante :
-# chaque réestimation utilise uniquement les données disponibles
-# antérieurement à l'origine concernée.
+# Réestimation avec fenêtre croissante (décision 4) : chaque mois sur le test
+# 2024-2025 et le test bonus, chaque trimestre sur la validation 2023. Chaque
+# bloc apprend uniquement sur les jours cibles antérieurs au bloc. Cette
+# constante n'est lue que par les tests : les blocs sont définis dans
+# src/modeles_lineaires.py.
 REESTIMATION = "mensuelle"
 
 
@@ -170,22 +171,10 @@ REESTIMATION = "mensuelle"
 # Toulouse-Blagnac, Bordeaux-Mérignac, Strasbourg-Entzheim
 # et Nantes-Bouguenais.
 #
-# NOUVELLE DÉCISION :
-# ce choix n'est plus considéré comme définitif.
-#
-# Avant de fixer le nombre et la liste des stations, nous analyserons
-# l'ensemble des stations métropolitaines disponibles afin d'étudier
-# notamment :
-#
-# - leur couverture temporelle sur la période étudiée ;
-# - les valeurs manquantes ;
-# - les doublons éventuels ;
-# - la stabilité de leur disponibilité selon les années ;
-# - leur répartition géographique ;
-# - la qualité générale des observations.
-#
-# Le nombre de stations sera donc déterminé après cette exploration
-# et devra être justifié dans le rapport.
+# DÉCISION FINALE (décision 7) : 40 stations présentes chaque année de 2015 à
+# 2025 et métropolitaines pour nettoyer et imputer ; les 38 stations
+# continentales pour la température France. La liste est calculée par
+# src/meteo.py ; cette constante n'est plus utilisée (gardée pour l'historique).
 #
 # Les codes OMM/WMO devront être conservés sous forme de chaînes
 # de 5 caractères afin de préserver les zéros initiaux
@@ -200,17 +189,11 @@ STATIONS_SYNOP = None
 # ANCIENNE PISTE :
 # moyenne simple des stations sélectionnées.
 #
-# NOUVELLE DÉCISION :
-# aucune méthode d'agrégation n'est encore fixée.
-#
-# Après l'analyse des stations, différentes possibilités pourront être
-# étudiées et justifiées, par exemple :
-#
-# - moyenne simple ;
-# - pondération pertinente si elle est justifiée ;
-# - autre représentation issue de l'analyse exploratoire.
-#
-# La décision finale sera prise avant l'évaluation sur le jeu de test.
+# DÉCISION FINALE (décision 8) : temp_38_ponderee, moyenne par région des 38
+# stations continentales, pondérée par la consommation des régions. Choisie sur
+# 2023, à égalité (moins de 1 MW) avec les deux autres candidates. Le candidat
+# retenu est utilisé par src/modeles_meteo.py et src/analyses.py ; cette
+# constante n'est plus utilisée (gardée pour l'historique).
 TEMPERATURE_NATIONALE = None
 
 # Réseau utilisé pour NETTOYER et IMPUTER : les 40 stations stables et
@@ -285,13 +268,9 @@ KELVIN_VERS_CELSIUS = 273.15
 # CONSOMMATION ÉLECTRIQUE
 # =============================================================================
 
-# Taille maximale actuellement envisagée pour l'interpolation
-# de petits trous dans la série.
-#
-# Toute valeur interpolée devra être signalée explicitement
-# (par exemple par une variable `interpole`).
-#
-# Cette règle reste à vérifier lors du traitement complet des données.
+# Taille maximale des trous comblés par interpolation (décision 10). Appliqué
+# dans src/rte.py, avec la colonne `interpole` : 10 heures interpolées sur 10 ans,
+# toutes à 2 h du matin le jour du passage à l'heure d'hiver.
 INTERPOLATION_MAX_HEURES = 3
 
 

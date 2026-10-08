@@ -76,7 +76,7 @@ app/tableau_de_bord.py  tableau de bord Streamlit (visite guidée des résultats
   evaluation.py        MAE, RMSE, MAPE, biais, total du jour, pointe, heure de pointe
 tests/                 tests automatiques, dont le test de non-fuite
 docs/                  décisions, protocole, disponibilité des variables, journal de l'IA
-notebooks/             notebooks Colab (enveloppes autour de src/)
+notebooks/             notebooks Jupyter (ils expliquent et appellent le code de src/)
 data/                  donnees-brutes/, interim/, donnees-traitees/, donnees-preparees/ : non versionnés
                        resultats/ : scores et prévisions des modèles (versionnés, refaits par experiences.py)
 report/                tables/ et figures/

@@ -2,7 +2,7 @@
 
 ## Répartition
 
-| | Martino | Khadim | Les deux |
+| | Martine | Khadim | Les deux |
 |---|---|---|---|
 | Domaine | Consommation et modèles de référence | Météo, calendrier et modèle élaboré | Protocole et évaluation |
 | Fichiers | `src/rte.py`, `src/benchmarks.py`, `src/evaluation.py`, `src/comparaison.py`, `src/analyses.py` | chaîne météo (`src/meteo.py` ... `src/temperature_france.py`), `src/calendrier.py`, `src/modeles_lineaires.py`, `src/modeles_meteo.py`, `src/modeles_hgbr.py`, `src/modeles_arma.py` | `src/config.py`, `src/protocole.py`, `src/features.py`, `src/experiences.py`, `docs/`, rapport, oral |
@@ -55,9 +55,9 @@ On modifie la valeur dans `src/config.py` **et** on ajoute une ligne à l'histor
 
 | Notebook | Responsable |
 |---|---|
-| `01_donnees_RTE` | Martino |
-| `02_relation_conso_meteo_calendrier` | Martino |
-| `03_benchmarks` | Martino |
+| `01_donnees_RTE` | Martine |
+| `02_relation_conso_meteo_calendrier` | Martine |
+| `03_benchmarks` | Martine |
 | `04_resultats_modeles` | à deux (pull request relue par l'autre) |
 | `exploration_meteo` | Khadim |
 | `exploration_calendrier` | Khadim |
