@@ -72,6 +72,7 @@ src/
   analyses.py          plafond météo parfaite, décision 14, erreurs par groupe, pires jours
   test_bonus.py        test bonus janvier-juin 2026 (une seule fois)
   visualisation.py     fichiers lus par le tableau de bord
+  rapport.py           tableaux et figures du rapport (report/)
 app/tableau_de_bord.py  tableau de bord Streamlit (visite guidée des résultats)
   evaluation.py        MAE, RMSE, MAPE, biais, total du jour, pointe, heure de pointe
 tests/                 tests automatiques, dont le test de non-fuite
@@ -79,7 +80,7 @@ docs/                  décisions, protocole, disponibilité des variables, jour
 notebooks/             notebooks Jupyter (ils expliquent et appellent le code de src/)
 data/                  donnees-brutes/, interim/, donnees-traitees/, donnees-preparees/ : non versionnés
                        resultats/ : scores et prévisions des modèles (versionnés, refaits par experiences.py)
-report/                tables/ et figures/
+report/                tables/ et figures/ du rapport (python -m src.rapport)
 ```
 
 ## Installation
@@ -109,6 +110,7 @@ pytest
 | 10 | Comparaison sur les mêmes jours | `python -m src.comparaison` (2023) ; `--test-final` (+ 2024-2025) | `data/resultats/comparaison_*.csv` : B0, B1, B2, M1 à M4 et le plafond notés sur les jours où toutes les méthodes ont leurs 24 heures | rapide | disponible |
 | 11 | Test bonus 2026 | `python -m src.test_bonus` | `data/resultats/test_bonus_2026_*.csv` et prévisions : janvier à juin 2026, configurations gelées, réestimation mensuelle, toutes les méthodes sur les mêmes jours. **Une seule fois** (décision 3). Les données de 2026 sont préparées à part, dans des sous-dossiers `test_bonus` : le projet reste sur 2015-2025 | environ 15 min | fait le 2026-10-07 |
 | 12 | Fichiers du tableau de bord | `python -m src.visualisation` | `data/resultats/visualisation_previsions.csv` (toutes les prévisions, mêmes jours) et `visualisation_jours.csv` (un résumé par jour sur 10 ans) | rapide | disponible |
+| 13 | Tableaux et figures du rapport | `python -m src.rapport` | `report/tables/` (CSV et Markdown) et `report/figures/` (PNG) : comparaison, trois périodes, significativité, choix sur 2023, erreurs par groupe, pires jours classés dans la grille de l'énoncé ; figures des données, du classement, des heures, du biais, de la carte heure x mois, des pires jours et des ablations | rapide | disponible |
 
 ## Tableau de bord
 

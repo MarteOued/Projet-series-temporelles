@@ -1,0 +1,34 @@
+Choix testé,Variante,MAE 2023 (MW),Retenu
+Retards (M1),veille (matin) + avant-veille + semaine passée,1547.9518911042333,oui
+Retards (M1),avant-veille + semaine passée,1958.7394567070744,
+Retards (M1),veille (matin) + semaine passée,2204.189989538276,
+Retards (M1),semaine passée seulement,3378.415326280261,
+Calendrier (M1),"ferie, veille ferie, lendemain ferie, pont potentiel, vacances A, vacances B, vacances C",1547.9518911042333,oui
+Calendrier (M1),"ferie, veille ferie, lendemain ferie, pont potentiel, vacances A, vacances B, vacances C, periode noel",1548.866418091546,
+Calendrier (M1),"ferie, veille ferie, lendemain ferie, pont potentiel",1549.4979305545476,
+Calendrier (M1),"ferie, veille ferie, lendemain ferie, pont potentiel, nb zones vacances",1554.9561081201114,
+Calendrier (M1),"ferie, veille ferie, lendemain ferie, pont potentiel, nb zones vacances, periode noel",1555.8914078460937,
+Calendrier (M1),ferie,1601.178135906065,
+Variables de température (M2),les 7 variables,1503.5349596756732,oui
+Variables de température (M2),+ degrés de climatisation,1520.8170445702044,
+Variables de température (M2),"13 h, lissée, degrés de chauffage",1548.956458569725,
+Variables de température (M2),+ température lissée,1579.548433711297,
+Variables de température (M2),+ température de la veille,1584.127899248875,
+Variables de température (M2),température de 13 h seule,1646.0664377624364,
+Température France (M2),temp_38_ponderee,1503.5349596756732,oui
+Température France (M2),temp_8_villes,1504.3168640089075,
+Température France (M2),temp_38_simple,1504.3951282070109,
+Forme du modèle (M1),24 modèles (un par heure),1547.9518911042333,oui
+Forme du modèle (M1),1 modèle (heure en variable),2096.0347772355058,
+Réglage de M3,"M3-1 : 15 feuilles, 300 étapes, pas 0.05",1579.7163180647838,oui
+Réglage de M3,"M3-2 : 31 feuilles, 300 étapes, pas 0.05",1599.0267007015752,
+Réglage de M3,"M3-4 : 31 feuilles, 200 étapes, pas 0.1",1611.6789180048495,
+Réglage de M3,"M3-3 : 63 feuilles, 300 étapes, pas 0.05",1653.5799167767518,
+Réglage de M4,"ARMA(1,0)",1521.0863519702912,oui
+Réglage de M4,"ARMA(2,1)",1527.065654596533,
+Réglage de M4,"ARMA(1,1)",1527.535048804339,
+Réglage de M4,"ARMA(2,0)",1557.9789518347764,
+Confinement 2020,M1 sans le confinement,1547.9518911042333,oui
+Confinement 2020,M2 sans le confinement,1503.5349596756732,oui
+Confinement 2020,M1 avec le confinement,1520.2866418305196,
+Confinement 2020,M2 avec le confinement,1410.4512474126243,

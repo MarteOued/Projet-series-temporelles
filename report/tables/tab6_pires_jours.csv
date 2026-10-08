@@ -1,0 +1,7 @@
+Période,Jour,Type,T veille (°C),T jour (°C),MAE M2 (MW),MAE plafond (MW),Sens,Catégorie (grille de l'énoncé)
+Test 2024-2025,05/01/2025,week-end,2.1168502593656373,9.72874731311943,8206.825460906615,959.4818124735966,trop haut,Limite des données : pas de prévision météo à 14 h (redoux non anticipé)
+Test 2024-2025,24/11/2024,week-end,5.549048540628921,13.558187151888289,7732.133654199783,745.7953756731373,trop haut,Limite des données : pas de prévision météo à 14 h (redoux non anticipé)
+Test 2024-2025,24/12/2024,Noël,5.823169121826965,6.747880474874969,7075.367843701321,5612.247840236919,trop haut,"Limite du modèle : jour spécial du calendrier, peu d'exemples"
+Test bonus 2026,08/01/2026,ouvré,0.2445368043359404,5.889519180947819,6105.599001060936,1677.5218300334352,trop haut,Limite des données : pas de prévision météo à 14 h (redoux non anticipé)
+Test bonus 2026,16/02/2026,ouvré,4.584212530774457,8.506964834295113,5974.015681059459,1501.3204629666916,trop haut,Limite des données : pas de prévision météo à 14 h (redoux non anticipé)
+Test bonus 2026,12/01/2026,ouvré,2.6859380294670245,7.334785562778923,5317.462998606842,1573.84730519972,trop haut,Limite des données : pas de prévision météo à 14 h (redoux non anticipé)
