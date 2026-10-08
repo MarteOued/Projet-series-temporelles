@@ -31,7 +31,10 @@ Les métriques sont calculées :
     - séparément sur 2024 ;
     - séparément sur 2025.
 
-Le test final ne doit être exécuté qu'une seule fois.
+Le test final ne devait être exécuté qu'une seule fois. Il l'a été deux fois :
+la seconde, le 2026-10-07, uniquement pour corriger une fuite (l'heure 13
+utilisait un résidu de M1 pas encore publié à 14 h, voir docs/decisions.md).
+Aucun réglage n'a été changé.
 """
 
 from __future__ import annotations
