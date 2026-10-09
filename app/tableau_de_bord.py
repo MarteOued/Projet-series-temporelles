@@ -111,7 +111,7 @@ def date_fr(jour):
 # ===========================================================================
 def page_accueil():
     ui.entete(
-        "Projet de séries temporelles · Master 1 Data Science · Université Lyon 2",
+        "Projet de séries temporelles · Master 2 MALIA · Université Lumière Lyon 2",
         "Prévoir la consommation d'électricité de la France, la veille pour le lendemain",
         "Chaque jour à 14 h, le gestionnaire du réseau électrique doit savoir combien d'électricité le pays "
         "consommera le lendemain, heure par heure. Nous avons construit, comparé et vérifié plusieurs façons "
@@ -122,10 +122,10 @@ def page_accueil():
     m2 = test.loc["M2", "MAE (MW)"]
     st.markdown(
         f'<div class="heros"><div><div class="chiffre">{ui.nombre(100 * m2 / conso)} %</div>'
-        f'<div class="sous">d\'erreur moyenne sur chaque heure prévue, 2024-2025</div></div>'
+        f'<div class="sous">rapport entre erreur moyenne et consommation moyenne, 2024–2025</div></div>'
         f'<div class="texte">Notre modèle retenu, <b>M2</b>, se trompe en moyenne de <b>{ui.mw(m2)}</b> par heure, '
-        f'sur une consommation moyenne de {ui.mw(conso)}. C\'est à peu près la puissance d\'<b>un réacteur nucléaire</b> '
-        f'(900 à 1 450 MW). Il fait <b>{ui.nombre(test.loc["B0", "MAE (MW)"] / m2)} fois mieux</b> que la méthode simple '
+        f'sur une consommation moyenne de {ui.mw(conso)}. '
+        f'La méthode simple B0 a une erreur <b>{ui.nombre(test.loc["B0", "MAE (MW)"] / m2)} fois plus élevée</b> que M2. '
         f'qui recopie la veille, et le résultat tient sur six mois de 2026 que personne n\'avait vus.</div></div>',
         unsafe_allow_html=True,
     )
@@ -133,8 +133,82 @@ def page_accueil():
         ("Erreur de M2, 2024-2025", ui.mw(m2), "le test final, lancé une fois les choix gelés"),
         ("Erreur de M2, début 2026", ui.mw(bonus.loc["M2", "MAE (MW)"]), "un dernier examen sur des données neuves"),
         ("Méthode simple (B0)", ui.mw(test.loc["B0", "MAE (MW)"]), "recopier la consommation la plus récente"),
-        ("Avec une météo parfaite", ui.mw(test.loc["Plafond", "MAE (MW)"]), "ce qu'apporterait une prévision météo"),
+        ("Avec une météo parfaite", ui.mw(test.loc["Plafond", "MAE (MW)"]), "scénario théorique : météo du lendemain connue exactement"),
     ])
+
+    st.subheader("Comprendre les résultats en 30 secondes")
+    st.info(
+        "**Notre objectif :** prévoir les 24 heures de consommation électrique du lendemain, "
+        "avec les informations disponibles la veille à 14 h. "
+        "**Notre résultat :** M2 (calendrier + consommation passée + température) est le plus précis "
+        "en erreur moyenne sur 2024–2025. M3 est très proche : la différence n'est pas "
+        "statistiquement significative."
+    )
+    a, b, c = st.columns(3)
+    with a:
+        st.metric("Erreur moyenne de M1", ui.mw(test.loc["M1", "MAE (MW)"]))
+        st.caption("Sans température : calendrier et consommation passée.")
+    with b:
+        st.metric("Erreur moyenne de M2", ui.mw(m2),
+                  delta=f"{(1 - m2 / test.loc['M1', 'MAE (MW)']) * 100:.1f} % d'erreur en moins que M1",
+                  delta_color="normal")
+        st.caption("Avec température : notre modèle retenu.")
+    with c:
+        st.metric("Erreur moyenne de M3", ui.mw(test.loc["M3", "MAE (MW)"]))
+        st.caption("Gradient boosting : performances proches de M2.")
+
+    st.subheader("Une journée réelle, heure par heure")
+    st.write("**Courbe noire :** consommation observée. **Courbe bleue :** prévision de M2. "
+             "Plus les courbes sont proches, meilleure est la prévision.")
+    donnees_test = previsions()
+    donnees_test = donnees_test[donnees_test["periode"] == "test"]
+    jours_disponibles = pd.to_datetime(donnees_test["jour_cible"].drop_duplicates().sort_values())
+    if not jours_disponibles.empty:
+        date_exemple = st.selectbox(
+            "Choisir une journée du test", options=list(jours_disponibles.dt.strftime("%Y-%m-%d")),
+            index=(list(jours_disponibles.dt.strftime("%Y-%m-%d")).index("2025-01-15")
+                   if "2025-01-15" in set(jours_disponibles.dt.strftime("%Y-%m-%d"))
+                   else len(jours_disponibles) // 2),
+            key="jour_accueil",
+        )
+        jour_exemple = donnees_test[donnees_test["jour_cible"] == date_exemple].sort_values("heure")
+        fig_jour = go.Figure()
+        fig_jour.add_trace(go.Scatter(
+            x=jour_exemple["heure"], y=jour_exemple["reel_MW"] / 1000,
+            mode="lines+markers", name="Consommation réelle", line=dict(color=ui.COULEURS["reel_MW"], width=3),
+            hovertemplate="%{x} h : %{y:.1f} GW<extra></extra>",
+        ))
+        fig_jour.add_trace(go.Scatter(
+            x=jour_exemple["heure"], y=jour_exemple["M2"] / 1000,
+            mode="lines+markers", name="Prévision M2", line=dict(color=ui.COULEURS["M2"], width=3),
+            hovertemplate="%{x} h : %{y:.1f} GW<extra></extra>",
+        ))
+        ui.mise_en_forme(fig_jour, hauteur=370, unite_y="GW", titre_x="heure de la journée")
+        fig_jour.update_layout(hovermode="x unified")
+        fig_jour.update_xaxes(dtick=2)
+        ui.afficher(fig_jour)
+        erreur_exemple = float((jour_exemple["M2"] - jour_exemple["reel_MW"]).abs().mean())
+        st.caption(f"Le {pd.Timestamp(date_exemple):%d/%m/%Y}, l'écart moyen est de "
+                   f"{ui.mw(erreur_exemple)}. Une journée ne suffit pas à juger un modèle : "
+                   "le classement ci-dessous utilise 723 jours.")
+
+    st.subheader("Le résultat reste-t-il bon d'une année à l'autre ?")
+    comparaison_annees = lire("comparaison_test_2024_2025_par_annee")
+    selection = comparaison_annees[comparaison_annees["methode"].str.startswith(("M1 :", "M2 :", "M3 :", "M4 :"))].copy()
+    selection["modele"] = selection["methode"].str.extract(r"^(M[1-4])")
+    fig_annees = go.Figure()
+    for modele in MODELES:
+        donnees_modele = selection[selection["modele"] == modele].sort_values("annee")
+        fig_annees.add_trace(go.Bar(
+            x=donnees_modele["annee"].astype(str), y=donnees_modele["MAE (MW)"],
+            name=modele, marker_color=ui.COULEURS[modele],
+            hovertemplate="%{x} : %{y:,.0f} MW<extra>" + modele + "</extra>",
+        ))
+    fig_annees.update_layout(barmode="group")
+    ui.mise_en_forme(fig_annees, hauteur=350, unite_y="MW", titre_x="année de test")
+    ui.afficher(fig_annees)
+    st.caption("Chaque barre représente l'erreur moyenne sur une année entière. "
+               "Une barre plus basse signifie une prévision plus précise.")
 
     st.subheader("Le classement en un coup d'œil")
     mae = test["MAE (MW)"].sort_values()
@@ -852,7 +926,7 @@ def main():
                     "France, prévue chaque jour à 14 h</div>", unsafe_allow_html=True)
     page = st.navigation(sections)
     with st.sidebar:
-        st.caption("Martine Ouedraogo · Khadim NGOM  \nMaster 1 Data Science, Université Lyon 2")
+        st.caption("Martine Ouedraogo · Khadim NGOM  \nMaster 2 MALIA — Machine Learning for Artificial Intelligence, Université Lumière Lyon 2")
     page.run()
 
 
