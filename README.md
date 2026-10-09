@@ -5,6 +5,7 @@ Projet de séries temporelles (Données temporelles, Université Lumière Lyon 2
 - Auteurs : Khadim NGOM et Martine Ouedraogo
 - Date de rendu : 11/10/2026 
 - Dépôt : https://github.com/MarteOued/Projet-series-temporelles
+- **Application Streamlit :** [https://prevision-electricite-france.streamlit.app/](https://prevision-electricite-france.streamlit.app/)
 
 ## Objectif
 
