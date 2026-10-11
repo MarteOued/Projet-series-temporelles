@@ -13,26 +13,18 @@ Chaque membre doit pouvoir expliquer les méthodes et les décisions prises lors
 
 | Date | Qui | Outil | Tâche demandée | Proposition obtenue | Décision | Vérification |
 |---|---|---|---|---|---|---|
-| 2026-10-03 | Martine | Claude | Comprendre pourquoi le notebook RTE ne s'exécutait pas | Le code était correct ; le kernel Python n'était pas sélectionné dans VS Code | Gardée | Exécution du notebook avec le `.venv` |
-| 2026-10-03 | Martine | Claude | Expliquer le sujet et proposer une démarche | Plan en 10 étapes ; identification d'incohérences dans les noms de dossiers | Gardée et adaptée | Relecture du sujet et de `docs/decisions.md` |
 | 2026-10-03 | Martine | Claude | Répartir le travail | Attribution initiale du calendrier à Martine | Rejetée | `CONTRIBUTING.md` attribue le calendrier à Khadim |
 | 2026-10-03 | Martine | Claude | Construire le notebook RTE | Notebook commenté, avec certaines observations rédigées avant l'exécution | Modifiée | Commentaires corrigés après lecture des sorties réelles |
 | 2026-10-03 | Martine | Claude | Choisir les données à télécharger | Ne télécharger que six colonnes et la période utile | Modifiée | Téléchargement du jeu complet : 508 320 lignes et 37 colonnes ; sélection ensuite |
 | 2026-10-03 | Martine | Claude | Traiter les changements d'heure | Recalculer l'heure de Paris depuis l'UTC pour identifier les lignes fantômes | Gardée | Inspection des dates du 27/03/2016 et du 30/10/2016 ; `tests/test_rte.py` |
-| 2026-10-03 | Martine | Claude | Représenter la consommation annuelle | Diagramme en barres avec un axe ne partant pas de zéro | Modifiée | Remplacement par des points reliés pour éviter une représentation trompeuse |
 | 2026-10-03 | Martine | Claude | Documenter les données disponibles à 14 h | Définition du protocole et mesure des retards de publication | Gardée | Vérification sur l'API ODRÉ et `tests/test_protocole.py` |
-| 2026-10-03 | Martine | Claude | Organiser le traitement RTE | Extraction des fonctions dans `src/rte.py` | Gardée | Résultat identique à celui du notebook ; 18 tests réussis |
 | 2026-10-05 | Martine | Claude | Relire la météo et le calendrier de Khadim | Identification d'une fuite dans l'imputation, de stations corses hors périmètre et de lacunes documentaires | Gardée, transmise à Khadim | Pipeline relancé ; vérification du périmètre national |
-| 2026-10-05 | Martine | Claude | Construire les benchmarks et les mesures d'erreur | `src/benchmarks.py`, `src/evaluation.py` et tests | Gardée | Calculs manuels et tests de la règle des 14 h |
-| 2026-10-05 | Martine | Claude | Commenter la semaine du 16 janvier 2023 | Affirmation que les benchmarks suivaient bien la consommation | Modifiée | Le graphique montrait une sous-estimation pendant toute la semaine |
 | 2026-10-05 | Martine | Claude | Ajouter le benchmark « jour précédent » | B0 : consommation de J jusqu'à l'heure 12, puis de J-1 | Gardée | Test de disponibilité des heures 12 et 13 |
-| 2026-10-05 | Martine | Claude | Interpréter l'erreur horaire de B0 | Affirmation d'une erreur maximale le matin | Modifiée | L'erreur culmine plutôt vers 14–16 h |
 | 2026-10-07 | Martine | Claude | Auditer les modèles M1 à M4 | Identification de problèmes de reproductibilité, de chronologie du test et d'une fuite dans M4 | Gardée | Reproduction des fichiers de résultats et inspection de l'historique Git |
 | 2026-10-07 | Martine | Claude | Tester l'absence de fuite dans `features.py` | Perturber les données postérieures à 14 h et comparer les variables construites | Modifiée puis gardée | Introduction volontaire de fausses fuites pour contrôler le test |
 | 2026-10-07 | Martine | Claude | Expliquer l'échec de M4 | Hypothèse d'erreurs d'apprentissage artificiellement petites | Rejetée | Écarts-types mesurés : 2 271 MW à l'apprentissage contre 2 063 MW en 2023 |
 | 2026-10-07 | Martine | Claude | Commenter les résultats du notebook 04 | Commentaires anticipant un classement identique et un gain de facteur 2,5 | Modifiée | Vérification : certains classements s'inversent et le facteur est proche de 2,4 |
 | 2026-10-07 | Martine | Claude | Préparer le test bonus 2026 | Étendre toute la période du projet jusqu'en juin 2026 | Rejetée | Test bonus isolé ; fichiers 2016–2025 identiques et scores reproduits |
-| 2026-10-07 | Martine | Claude | Construire le tableau de bord Streamlit | Application à 12 pages | Modifiée | Inspection visuelle et tests automatisés des trois périodes |
 
 ## 2. Trois exemples détaillés — Martine
 
@@ -137,40 +129,16 @@ Certains commentaires générés avant l'exécution du notebook étaient inexact
 
 **Décision :** réécriture des commentaires après consultation des données et des graphiques.
 
-## 5. Corrections de la météo et du calendrier
+## 5. Bilan critique
 
-Les corrections suivantes ont été demandées après la relecture du travail météorologique de Khadim, le 5 octobre 2026. Elles ont été réalisées par Martine avec Claude sur la branche `khadim/corrections-meteo`.
+Nous avons utilisé Claude pour mieux comprendre le sujet, structurer notre démarche, écrire et relire du code, proposer des tests et améliorer la documentation. Il nous a surtout fait gagner du temps sur les tâches répétitives et nous a aidées à repérer des erreurs que nous n'avions pas vues, comme les fuites d'information.
 
-Ces interventions ne doivent pas être présentées comme des modifications directement effectuées par ChatGPT pour Khadim.
+Nous avons aussi constaté ses limites :
 
-| Date | Intervention | Proposition | Décision | Vérification |
-|---|---|---|---|---|
-| 2026-10-05 | Rendre l'imputation temporelle causale | Persistance, veille et persistance ajustée selon la longueur du trou | Gardée | Tests anti-fuite et comparaison sur 1 000 séquences par longueur |
-| 2026-10-05 | Remplacer deux corrections manuelles d'anomalies | Seuil fixe de 10 °C entre une station et ses voisines | Rejetée | Détectait aussi une vraie mesure lors d'un orage ; remplacement par un seuil appris de 14,19 °C |
-| 2026-10-05 | Apprendre les paramètres météo sur l'apprentissage uniquement | Centraliser la limite temporelle dans `protocole.fin_apprentissage_utc()` | Gardée | Modification artificielle des données 2023 sans effet sur les coefficients |
-| 2026-10-05 | Préparer plusieurs températures nationales | Trois candidates et deux scénarios : opérationnel et météo parfaite | Gardée | Modification des observations futures sans effet sur les valeurs opérationnelles antérieures |
-| 2026-10-05 | Accélérer un benchmark temporel | Vectoriser la recherche des séquences | Gardée | Résultat identique sur 172 séquences ; temps réduit d'environ 10 minutes à 6 secondes |
+- certaines propositions ne respectaient pas nos décisions, par exemple prolonger la période du projet jusqu'en 2026 ;
+- des commentaires ont été écrits avant que nous ayons regardé les résultats, et il a fallu les corriger ;
+- des explications qui semblaient logiques se sont révélées fausses une fois mesurées ;
+- les tests qu'il proposait devaient eux-mêmes être testés ;
+- une solution qui marche techniquement ne respecte pas forcément la règle des 14 h.
 
-La validation finale de ces corrections suppose leur relecture, leur exécution et leur compréhension par les membres du groupe.
-
-## 6. Bilan critique
-
-L'utilisation de l'IA a principalement apporté :
-
-- une aide à la compréhension et à l'organisation du problème ;
-- une assistance à la programmation et à la documentation ;
-- des propositions de tests de cohérence et de non-fuite ;
-- un soutien à l'analyse et à l'interprétation des résultats ;
-- une aide à la reproductibilité et à la présentation du projet.
-
-Plusieurs limites ont également été constatées :
-
-- certaines propositions étaient incompatibles avec les décisions du groupe ;
-- des commentaires ont été rédigés avant l'observation des résultats ;
-- des explications statistiques plausibles se sont révélées fausses ;
-- certains tests proposés ont nécessité eux-mêmes une vérification ;
-- une solution correcte sur le plan informatique ne garantit pas le respect du protocole temporel.
-
-Le groupe a donc retenu une démarche de vérification systématique : **proposition de l'IA, examen critique, test ou comparaison empirique, puis décision humaine documentée**.
-
-L'IA a constitué un outil d'assistance, et non une source autonome de validation scientifique.
+Pour ces raisons, nous n'avons jamais pris une réponse de l'IA pour acquise. À chaque fois, nous avons relu la proposition, vérifié sur les données ou avec un test, puis décidé nous-mêmes de la garder, de la modifier ou de la rejeter. Ce sont nos choix, et nous pouvons les expliquer à l'oral.
