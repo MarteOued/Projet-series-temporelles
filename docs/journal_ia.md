@@ -13,26 +13,26 @@ Chaque membre doit pouvoir expliquer les méthodes et les décisions prises lors
 
 | Date | Qui | Outil | Tâche demandée | Proposition obtenue | Décision | Vérification |
 |---|---|---|---|---|---|---|
-| 2026-10-03 | Martine | Claude Code | Comprendre pourquoi le notebook RTE ne s'exécutait pas | Le code était correct ; le kernel Python n'était pas sélectionné dans VS Code | Gardée | Exécution du notebook avec le `.venv` |
-| 2026-10-03 | Martine | Claude Code | Expliquer le sujet et proposer une démarche | Plan en 10 étapes ; identification d'incohérences dans les noms de dossiers | Gardée et adaptée | Relecture du sujet et de `docs/decisions.md` |
-| 2026-10-03 | Martine | Claude Code | Répartir le travail | Attribution initiale du calendrier à Martine | Rejetée | `CONTRIBUTING.md` attribue le calendrier à Khadim |
-| 2026-10-03 | Martine | Claude Code | Construire le notebook RTE | Notebook commenté, avec certaines observations rédigées avant l'exécution | Modifiée | Commentaires corrigés après lecture des sorties réelles |
-| 2026-10-03 | Martine | Claude Code | Choisir les données à télécharger | Ne télécharger que six colonnes et la période utile | Modifiée | Téléchargement du jeu complet : 508 320 lignes et 37 colonnes ; sélection ensuite |
-| 2026-10-03 | Martine | Claude Code | Traiter les changements d'heure | Recalculer l'heure de Paris depuis l'UTC pour identifier les lignes fantômes | Gardée | Inspection des dates du 27/03/2016 et du 30/10/2016 ; `tests/test_rte.py` |
-| 2026-10-03 | Martine | Claude Code | Représenter la consommation annuelle | Diagramme en barres avec un axe ne partant pas de zéro | Modifiée | Remplacement par des points reliés pour éviter une représentation trompeuse |
-| 2026-10-03 | Martine | Claude Code | Documenter les données disponibles à 14 h | Définition du protocole et mesure des retards de publication | Gardée | Vérification sur l'API ODRÉ et `tests/test_protocole.py` |
-| 2026-10-03 | Martine | Claude Code | Organiser le traitement RTE | Extraction des fonctions dans `src/rte.py` | Gardée | Résultat identique à celui du notebook ; 18 tests réussis |
-| 2026-10-05 | Martine | Claude Code | Relire la météo et le calendrier de Khadim | Identification d'une fuite dans l'imputation, de stations corses hors périmètre et de lacunes documentaires | Gardée, transmise à Khadim | Pipeline relancé ; vérification du périmètre national |
-| 2026-10-05 | Martine | Claude Code | Construire les benchmarks et les mesures d'erreur | `src/benchmarks.py`, `src/evaluation.py` et tests | Gardée | Calculs manuels et tests de la règle des 14 h |
-| 2026-10-05 | Martine | Claude Code | Commenter la semaine du 16 janvier 2023 | Affirmation que les benchmarks suivaient bien la consommation | Modifiée | Le graphique montrait une sous-estimation pendant toute la semaine |
-| 2026-10-05 | Martine | Claude Code | Ajouter le benchmark « jour précédent » | B0 : consommation de J jusqu'à l'heure 12, puis de J-1 | Gardée | Test de disponibilité des heures 12 et 13 |
-| 2026-10-05 | Martine | Claude Code | Interpréter l'erreur horaire de B0 | Affirmation d'une erreur maximale le matin | Modifiée | L'erreur culmine plutôt vers 14–16 h |
-| 2026-10-07 | Martine | Claude Code | Auditer les modèles M1 à M4 | Identification de problèmes de reproductibilité, de chronologie du test et d'une fuite dans M4 | Gardée | Reproduction des fichiers de résultats et inspection de l'historique Git |
-| 2026-10-07 | Martine | Claude Code | Tester l'absence de fuite dans `features.py` | Perturber les données postérieures à 14 h et comparer les variables construites | Modifiée puis gardée | Introduction volontaire de fausses fuites pour contrôler le test |
-| 2026-10-07 | Martine | Claude Code | Expliquer l'échec de M4 | Hypothèse d'erreurs d'apprentissage artificiellement petites | Rejetée | Écarts-types mesurés : 2 271 MW à l'apprentissage contre 2 063 MW en 2023 |
-| 2026-10-07 | Martine | Claude Code | Commenter les résultats du notebook 04 | Commentaires anticipant un classement identique et un gain de facteur 2,5 | Modifiée | Vérification : certains classements s'inversent et le facteur est proche de 2,4 |
-| 2026-10-07 | Martine | Claude Code | Préparer le test bonus 2026 | Étendre toute la période du projet jusqu'en juin 2026 | Rejetée | Test bonus isolé ; fichiers 2016–2025 identiques et scores reproduits |
-| 2026-10-07 | Martine | Claude Code | Construire le tableau de bord Streamlit | Application à 12 pages | Modifiée | Inspection visuelle et tests automatisés des trois périodes |
+| 2026-10-03 | Martine | Claude | Comprendre pourquoi le notebook RTE ne s'exécutait pas | Le code était correct ; le kernel Python n'était pas sélectionné dans VS Code | Gardée | Exécution du notebook avec le `.venv` |
+| 2026-10-03 | Martine | Claude | Expliquer le sujet et proposer une démarche | Plan en 10 étapes ; identification d'incohérences dans les noms de dossiers | Gardée et adaptée | Relecture du sujet et de `docs/decisions.md` |
+| 2026-10-03 | Martine | Claude | Répartir le travail | Attribution initiale du calendrier à Martine | Rejetée | `CONTRIBUTING.md` attribue le calendrier à Khadim |
+| 2026-10-03 | Martine | Claude | Construire le notebook RTE | Notebook commenté, avec certaines observations rédigées avant l'exécution | Modifiée | Commentaires corrigés après lecture des sorties réelles |
+| 2026-10-03 | Martine | Claude | Choisir les données à télécharger | Ne télécharger que six colonnes et la période utile | Modifiée | Téléchargement du jeu complet : 508 320 lignes et 37 colonnes ; sélection ensuite |
+| 2026-10-03 | Martine | Claude | Traiter les changements d'heure | Recalculer l'heure de Paris depuis l'UTC pour identifier les lignes fantômes | Gardée | Inspection des dates du 27/03/2016 et du 30/10/2016 ; `tests/test_rte.py` |
+| 2026-10-03 | Martine | Claude | Représenter la consommation annuelle | Diagramme en barres avec un axe ne partant pas de zéro | Modifiée | Remplacement par des points reliés pour éviter une représentation trompeuse |
+| 2026-10-03 | Martine | Claude | Documenter les données disponibles à 14 h | Définition du protocole et mesure des retards de publication | Gardée | Vérification sur l'API ODRÉ et `tests/test_protocole.py` |
+| 2026-10-03 | Martine | Claude | Organiser le traitement RTE | Extraction des fonctions dans `src/rte.py` | Gardée | Résultat identique à celui du notebook ; 18 tests réussis |
+| 2026-10-05 | Martine | Claude | Relire la météo et le calendrier de Khadim | Identification d'une fuite dans l'imputation, de stations corses hors périmètre et de lacunes documentaires | Gardée, transmise à Khadim | Pipeline relancé ; vérification du périmètre national |
+| 2026-10-05 | Martine | Claude | Construire les benchmarks et les mesures d'erreur | `src/benchmarks.py`, `src/evaluation.py` et tests | Gardée | Calculs manuels et tests de la règle des 14 h |
+| 2026-10-05 | Martine | Claude | Commenter la semaine du 16 janvier 2023 | Affirmation que les benchmarks suivaient bien la consommation | Modifiée | Le graphique montrait une sous-estimation pendant toute la semaine |
+| 2026-10-05 | Martine | Claude | Ajouter le benchmark « jour précédent » | B0 : consommation de J jusqu'à l'heure 12, puis de J-1 | Gardée | Test de disponibilité des heures 12 et 13 |
+| 2026-10-05 | Martine | Claude | Interpréter l'erreur horaire de B0 | Affirmation d'une erreur maximale le matin | Modifiée | L'erreur culmine plutôt vers 14–16 h |
+| 2026-10-07 | Martine | Claude | Auditer les modèles M1 à M4 | Identification de problèmes de reproductibilité, de chronologie du test et d'une fuite dans M4 | Gardée | Reproduction des fichiers de résultats et inspection de l'historique Git |
+| 2026-10-07 | Martine | Claude | Tester l'absence de fuite dans `features.py` | Perturber les données postérieures à 14 h et comparer les variables construites | Modifiée puis gardée | Introduction volontaire de fausses fuites pour contrôler le test |
+| 2026-10-07 | Martine | Claude | Expliquer l'échec de M4 | Hypothèse d'erreurs d'apprentissage artificiellement petites | Rejetée | Écarts-types mesurés : 2 271 MW à l'apprentissage contre 2 063 MW en 2023 |
+| 2026-10-07 | Martine | Claude | Commenter les résultats du notebook 04 | Commentaires anticipant un classement identique et un gain de facteur 2,5 | Modifiée | Vérification : certains classements s'inversent et le facteur est proche de 2,4 |
+| 2026-10-07 | Martine | Claude | Préparer le test bonus 2026 | Étendre toute la période du projet jusqu'en juin 2026 | Rejetée | Test bonus isolé ; fichiers 2016–2025 identiques et scores reproduits |
+| 2026-10-07 | Martine | Claude | Construire le tableau de bord Streamlit | Application à 12 pages | Modifiée | Inspection visuelle et tests automatisés des trois périodes |
 
 ## 2. Trois exemples détaillés — Martine
 
@@ -80,7 +80,7 @@ Une autre explication proposée pour M4 a été rejetée après mesure : les err
 
 Les exemples suivants décrivent des travaux documentés dans le projet. Leur attribution exacte à des échanges avec ChatGPT, ainsi que les décisions prises personnellement par Khadim, doivent être confirmées avant la remise.
 
-### 3.1. Assistance à la construction des données météorologiques
+### 3.1. Proposition conservée : imputation causale de la météo
 
 **Tâche :** préparer une série de température nationale utilisable pour prévoir la consommation à 14 h, sans introduire d'information future.
 
@@ -92,18 +92,19 @@ Plusieurs solutions d'imputation ont été étudiées : exploitation des station
 
 **Vérification documentée :** des tests anti-fuite contrôlent que la modification d'observations futures ne change pas les valeurs imputées antérieurement. Les méthodes temporelles ont été comparées sur des séquences artificiellement masquées.
 
-### 3.2. Accompagnement méthodologique du modèle M3
+### 3.2. Proposition rejetée : seuil fixe pour les anomalies de température
 
-**Tâche :** construire et évaluer un modèle de gradient boosting pour comparer une méthode non linéaire à la régression M2.
+**Tâche :** remplacer deux corrections manuelles d'anomalies de la météo par une règle automatique.
 
-**Travail documenté :** M3 repose sur `HistGradientBoostingRegressor` et utilise les mêmes variables explicatives que M2. Les configurations ont été comparées sur la validation 2023, à partir d'une grille fixée à l'avance.
+**Proposition de l'IA :** un seuil fixe de 10 °C d'écart entre une station et ses voisines.
 
-**Décision méthodologique :** retenir la configuration sélectionnée sur 2023 et évaluer le modèle sur 2024–2025, sans ajuster les paramètres à partir des résultats du test.
+**Décision :** proposition rejetée.
 
-**Vérification documentée :** comparaison des MAE, examen de la stabilité des performances et test de Diebold-Mariano. Sur 2024–2025, M2 obtient environ 1 331 MW et M3 environ 1 349 MW, avec une différence non significative (`p = 0,60`).
+**Vérification :** ce seuil détectait aussi une vraie mesure, lors d'un orage. Il a été remplacé par un seuil appris sur l'apprentissage, de 14,19 °C.
 
+**Enseignement :** une règle simple et plausible doit être testée sur des cas réels avant d'être retenue.
 
-### 3.3. Analyse de la correction autorégressive M4
+### 3.3. Proposition modifiée : correction autorégressive M4
 
 **Tâche :** étudier si les erreurs récentes de M1 pouvaient améliorer les prévisions du lendemain.
 
@@ -138,7 +139,7 @@ Certains commentaires générés avant l'exécution du notebook étaient inexact
 
 ## 5. Corrections de la météo et du calendrier
 
-Les corrections suivantes ont été demandées après la relecture du travail météorologique de Khadim, le 5 octobre 2026. Elles ont été réalisées par Martine avec Claude Code sur la branche `khadim/corrections-meteo`.
+Les corrections suivantes ont été demandées après la relecture du travail météorologique de Khadim, le 5 octobre 2026. Elles ont été réalisées par Martine avec Claude sur la branche `khadim/corrections-meteo`.
 
 Ces interventions ne doivent pas être présentées comme des modifications directement effectuées par ChatGPT pour Khadim.
 
