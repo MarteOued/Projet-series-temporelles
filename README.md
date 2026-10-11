@@ -44,44 +44,68 @@ Toutes les décisions (période, découpage, heure de référence, stations, Cov
 ## Organisation du dépôt
 
 ```text
-README.md              ce fichier
-CONTRIBUTING.md        façon de travailler à deux
-requirements.txt       dépendances Python
-pytest.ini             configuration des tests
-src/
-  config.py            décisions du groupe (valeurs)
-  rte.py               consommation : téléchargement, passage à l'heure
-  meteo.py             météo : téléchargements, lecture, choix des 40 stations
-  pipeline_meteo.py    toute la météo en une commande (lance les modules ci-dessous)
-    imputation_meteo.py, benchmark_imputation.py          imputation spatiale (voisins au même instant)
-    diagnostic_trous_meteo.py                             trous restants (pannes du réseau)
-    imputation_temporelle.py, benchmark_imputation_temporelle.py   imputation temporelle causale
-    correction_anomalies_meteo.py, diagnostic_anomalies_meteo.py   règle d'anomalie et contrôle
-    validation_meteo.py                                   contrôles de la matrice finale
-    temperature_france.py                                 3 températures France candidates, horaires
-  calendrier.py        variables calendaires (fériés, ponts, vacances, période de Noël candidate)
-  vacances.py, recuperation_vacances*.py   calendriers scolaires
-  protocole.py         règle des 14 h (conso, météo), bornes de l'apprentissage (découpage : config.py ; blocs : modeles_lineaires.py)
-  features.py          table des variables connues à 14 h (dataset de modélisation)
-  benchmarks.py        benchmarks sans apprentissage (B0, B1, B2)
-  modeles_lineaires.py M1 : calendrier + consommation passée, un modèle par heure
-  modeles_meteo.py     M2 : M1 + température (course des 3 températures, variantes)
-  modeles_hgbr.py      M3 : gradient boosting
-  modeles_arma.py      M4 : M1 + correction ARMA de ses erreurs ; evaluation_finale_m4.py
-  experiences.py       refait tous les fichiers de data/resultats
-  comparaison.py       benchmarks et modèles notés sur les mêmes jours
-  analyses.py          plafond météo parfaite, décision 14, erreurs par groupe, pires jours
-  test_bonus.py        test bonus janvier-juin 2026 (une seule fois)
-  visualisation.py     fichiers lus par le tableau de bord
-  rapport.py           tableaux et figures du rapport (report/)
-app/tableau_de_bord.py  tableau de bord Streamlit (visite guidée des résultats)
-  evaluation.py        MAE, RMSE, MAPE, biais, total du jour, pointe, heure de pointe
-tests/                 tests automatiques, dont le test de non-fuite
-docs/                  décisions, protocole, disponibilité des variables, journal de l'IA
-notebooks/             notebooks Jupyter (ils expliquent et appellent le code de src/)
-data/                  donnees-brutes/, interim/, donnees-traitees/, donnees-preparees/ : non versionnés
-                       resultats/ : scores et prévisions des modèles (versionnés, refaits par experiences.py)
-report/                tables/ et figures/ du rapport (python -m src.rapport)
+Fichiers à la racine
+  README.md                  ce fichier
+  CONTRIBUTING.md            façon de travailler à deux
+  requirements.txt           dépendances Python
+  pytest.ini                 configuration des tests
+
+src/ : le code
+  Réglages et règles communes
+    config.py                décisions du groupe (valeurs)
+    protocole.py             règle des 14 h (conso, météo), bornes de l'apprentissage
+                             (découpage : config.py ; blocs : modeles_lineaires.py)
+    evaluation.py            MAE, RMSE, MAPE, biais, total du jour, pointe, heure de pointe
+
+  Consommation
+    rte.py                   téléchargement, passage à l'heure
+
+  Météo
+    meteo.py                 téléchargements, lecture, choix des 40 stations
+    pipeline_meteo.py        toute la météo en une commande (lance les modules ci-dessous)
+    imputation_meteo.py, benchmark_imputation.py
+                             imputation spatiale (voisins au même instant)
+    diagnostic_trous_meteo.py
+                             trous restants (pannes du réseau)
+    imputation_temporelle.py, benchmark_imputation_temporelle.py
+                             imputation temporelle causale
+    correction_anomalies_meteo.py, diagnostic_anomalies_meteo.py
+                             règle d'anomalie et contrôle
+    validation_meteo.py      contrôles de la matrice finale
+    temperature_france.py    3 températures France candidates, horaires
+
+  Calendrier
+    calendrier.py            variables calendaires (fériés, ponts, vacances, période de Noël candidate)
+    vacances.py, recuperation_vacances*.py
+                             calendriers scolaires
+
+  Variables et modèles
+    features.py              table des variables connues à 14 h (dataset de modélisation)
+    benchmarks.py            benchmarks sans apprentissage (B0, B1, B2)
+    modeles_lineaires.py     M1 : calendrier + consommation passée, un modèle par heure
+    modeles_meteo.py         M2 : M1 + température (course des 3 températures, variantes)
+    modeles_hgbr.py          M3 : gradient boosting
+    modeles_arma.py          M4 : M1 + correction ARMA de ses erreurs
+    evaluation_finale_m4.py  évaluation finale de M4
+
+  Résultats et analyses
+    experiences.py           refait tous les fichiers de data/resultats
+    comparaison.py           benchmarks et modèles notés sur les mêmes jours
+    analyses.py              plafond météo parfaite, décision 14, erreurs par groupe, pires jours
+    test_bonus.py            test bonus janvier-juin 2026 (une seule fois)
+    visualisation.py         fichiers lus par le tableau de bord
+    rapport.py               tableaux et figures du rapport (report/)
+
+Autres dossiers
+  app/tableau_de_bord.py     tableau de bord Streamlit (visite guidée des résultats)
+  tests/                     tests automatiques, dont le test de non-fuite
+  docs/                      décisions, protocole, disponibilité des variables, journal de l'IA
+  notebooks/                 notebooks Jupyter (ils expliquent et appellent le code de src/)
+  report/                    tables/ et figures/ du rapport (python -m src.rapport)
+  data/
+    donnees-brutes/, interim/, donnees-traitees/, donnees-preparees/
+                             non versionnés
+    resultats/               scores et prévisions des modèles (versionnés, refaits par experiences.py)
 ```
 
 ## Installation
@@ -167,7 +191,7 @@ Voir `CONTRIBUTING.md` : une branche par personne et par sujet, pull request rel
 - [x] Test final 2024-2025 (chronologie de son utilisation écrite dans `docs/decisions.md`)
 - [x] Comparaison sur les mêmes jours, plafond « météo parfaite », analyses par groupe, 3 pires jours (notebook 04)
 - [x] Test bonus janvier-juin 2026, lancé une seule fois (`src/test_bonus.py`, notebook 04)
-- [ ] Journal de l'IA : 3 exemples chacun (`docs/journal_ia.md`)
+- [x] Journal de l'IA : 3 exemples chacun (`docs/journal_ia.md`)
 - [ ] Rapport (moins de 10 pages), oral (10 min)
 
 ## Usage de l'IA
