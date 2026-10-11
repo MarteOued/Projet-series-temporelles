@@ -192,7 +192,7 @@ Voir `CONTRIBUTING.md` : une branche par personne et par sujet, pull request rel
 - [x] Comparaison sur les mêmes jours, plafond « météo parfaite », analyses par groupe, 3 pires jours (notebook 04)
 - [x] Test bonus janvier-juin 2026, lancé une seule fois (`src/test_bonus.py`, notebook 04)
 - [x] Journal de l'IA : 3 exemples chacun (`docs/journal_ia.md`)
-- [ ] Rapport (moins de 10 pages), oral (10 min)
+- [x] Rapport (moins de 10 pages), oral (10 min)
 
 ## Usage de l'IA
 
